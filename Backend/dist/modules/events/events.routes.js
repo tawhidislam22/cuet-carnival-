@@ -1,0 +1,10 @@
+import { Router } from "express";
+import { requireAuth } from "../../middlewares/require-auth.js";
+import { createEventController, deleteEventController, getEventController, listEventsController, updateEventController, } from "./events.controller.js";
+const router = Router();
+router.get("/", listEventsController);
+router.get("/:id", getEventController);
+router.post("/", requireAuth, createEventController);
+router.patch("/:id", requireAuth, updateEventController);
+router.delete("/:id", requireAuth, deleteEventController);
+export const eventsRouter = router;
