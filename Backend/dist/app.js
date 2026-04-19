@@ -1,3 +1,4 @@
+import "express-async-errors";
 import express from "express";
 import cors from "cors";
 import morgan from "morgan";
@@ -19,6 +20,14 @@ app.use("/api/events", eventsRouter);
 app.use("/api/dashboard", dashboardRouter);
 app.use((err, _req, res, next) => {
     void next;
+    const prismaCode = typeof err === "object" && err !== null && "code" in err
+        ? err.code
+        : undefined;
+    if (prismaCode === "P1001" || prismaCode === "P1002") {
+        return res.status(503).json({
+            message: "Database is temporarily unavailable or waking up. Please retry in a few seconds.",
+        });
+    }
     console.error(err);
     res.status(500).json({ message: "Internal server error" });
 });

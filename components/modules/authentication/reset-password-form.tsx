@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,8 +17,13 @@ import {
 
 export function ResetPasswordForm() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const token = searchParams.get("token");
+  const [token, setToken] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setToken(new URLSearchParams(window.location.search).get("token"));
+    setMounted(true);
+  }, []);
 
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -110,7 +115,7 @@ export function ResetPasswordForm() {
               {isSubmitting ? "Resetting..." : "Reset password"}
             </Button>
           </div>
-          {!token ? (
+          {mounted && !token ? (
             <p className="mt-3 text-sm text-destructive">
               Missing token. Use the password reset link sent to your email.
             </p>

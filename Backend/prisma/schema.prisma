@@ -4,25 +4,28 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String    @unique
-  studentId     String?
-  department    String?
-  emailVerified Boolean   @default(false)
-  image         String?
-  role          String    @default("user")
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-
-  sessions      Session[]
-  accounts      Account[]
-  events        Event[]
-  registrations EventRegistration[]
+  id                  String              @id @default(cuid())
+  name                String?
+  email               String              @unique
+  studentId           String?
+  department          String?
+  hall                String?
+  emailVerified       Boolean             @default(false)
+  image               String?
+  role                String              @default("user")
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  onboardingCompleted Boolean             @default(false)
+  organizerBio        String?
+  organizerClubName   String?
+  organizerEventType  String?
+  accounts            Account[]
+  events              Event[]
+  registrations       EventRegistration[]
+  sessions            Session[]
 }
 
 model Session {
@@ -34,7 +37,6 @@ model Session {
   userId    String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
@@ -52,14 +54,13 @@ model Account {
   password              String?
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
-
   user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([providerId, accountId])
 }
 
 model Verification {
-  id         String   @id @default(cuid())
+  id         String    @id @default(cuid())
   identifier String
   value      String
   expiresAt  DateTime
@@ -70,35 +71,65 @@ model Verification {
 }
 
 model Event {
-  id          String   @id @default(cuid())
-  title       String
-  description String
-  category    String   @default("General")
-  status      String   @default("Upcoming")
-  imageUrl    String?
-  location    String
-  startsAt    DateTime
-  endsAt      DateTime
-  isPublished Boolean  @default(false)
-  capacity    Int
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  organizerId String
-  organizer   User     @relation(fields: [organizerId], references: [id], onDelete: Cascade)
+  id            String              @id @default(cuid())
+  title         String
+  description   String
+  category      String              @default("General")
+  status        String              @default("Upcoming")
+  imageUrl      String?
+  location      String
+  startsAt      DateTime
+  endsAt        DateTime
+  isPublished   Boolean             @default(false)
+  capacity      Int
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  organizerId   String
+  organizer     User                @relation(fields: [organizerId], references: [id], onDelete: Cascade)
   registrations EventRegistration[]
 }
 
 model EventRegistration {
-  id           String   @id @default(cuid())
-  status       String   @default("Confirmed")
-  registeredAt DateTime @default(now())
-
-  userId       String
-  eventId      String
-
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                  String    @id @default(cuid())
+  status              String    @default("Confirmed")
+  registeredAt        DateTime  @default(now())
+  certificateIssuedAt DateTime?
+  studentId           String?
+  department          String?
+  hall                String?
+  userId              String
+  eventId             String
   event        Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, eventId])
+}
+
+model Faculty {
+  id         String          @id @default(cuid())
+  name       String          @unique
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+  categories EventCategory[]
+  venues     Venue[]
+}
+
+model EventCategory {
+  id        String   @id @default(cuid())
+  name      String
+  facultyId String
+  faculty   Faculty  @relation(fields: [facultyId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([name, facultyId])
+}
+
+model Venue {
+  id        String   @id @default(cuid())
+  name      String
+  facultyId String
+  faculty   Faculty  @relation(fields: [facultyId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([name, facultyId])
 }

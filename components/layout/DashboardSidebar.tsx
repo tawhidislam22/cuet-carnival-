@@ -1,17 +1,37 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { CuetCarnivalLogo } from "@/components/ui/cuet-carnival-logo";
+import { UserAvatarMenu } from "@/components/ui/user-avatar-menu";
+import { signOutAuth } from "@/lib/auth-client";
 
-export function DashboardSidebar() {
+type DashboardSidebarProps = {
+  organizerOnboardingLocked?: boolean;
+};
+
+export function DashboardSidebar({ organizerOnboardingLocked = false }: DashboardSidebarProps) {
   const pathname = usePathname();
-  const isAdminRoute = pathname.startsWith("/dashboard/admin");
-  const isOrganizerRoute = pathname.startsWith("/dashboard/organizer");
+  const router = useRouter();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  const isActiveRoute = (href: string) => {
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    await signOutAuth();
+    router.push("/login");
+    router.refresh();
+  };
+  const isAdminRoute = pathname.startsWith("/dashboard/admin");
+  const isOrganizerRoute =
+    pathname.startsWith("/dashboard/organizer") || pathname.startsWith("/dashboard/onboarding");
+
+  const isActiveRoute = (item: { href: string; activeCheck?: (p: string) => boolean }) => {
+    if (item.activeCheck) return item.activeCheck(pathname);
+    const href = item.href;
     // Parent "home" links should be active only on exact match.
     if (
       href === "/dashboard" ||
@@ -93,6 +113,15 @@ export function DashboardSidebar() {
       ),
     },
     {
+      name: "Categories & Venues",
+      href: "/dashboard/admin/categories",
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+        </svg>
+      ),
+    },
+    {
       name: "Manage Events",
       href: "/dashboard/admin/events",
       icon: (
@@ -135,6 +164,7 @@ export function DashboardSidebar() {
     {
       name: "Organizer Home",
       href: "/dashboard/organizer",
+      lockable: true,
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7h18M3 12h18M3 17h18" />
@@ -144,6 +174,7 @@ export function DashboardSidebar() {
     {
       name: "Create Event",
       href: "/dashboard/organizer/create-event",
+      lockable: true,
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -153,6 +184,8 @@ export function DashboardSidebar() {
     {
       name: "Manage Events",
       href: "/dashboard/organizer/manage-events",
+      lockable: true,
+      activeCheck: (p: string) => p === "/dashboard/organizer/manage-events",
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2V9M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
@@ -160,50 +193,161 @@ export function DashboardSidebar() {
       ),
     },
     {
-      name: "Back to User",
-      href: "/dashboard",
+      name: "Event Details",
+      href: "/dashboard/organizer/event-details",
+      lockable: true,
+      activeCheck: (p: string) => p === "/dashboard/organizer/event-details" || p.startsWith("/dashboard/organizer/event-details/"),
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+        </svg>
+      ),
+    },
+    {
+      name: "Update Events",
+      href: "/dashboard/organizer/update-events",
+      lockable: true,
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+        </svg>
+      ),
+    },
+    {
+      name: "Certificates",
+      href: "/dashboard/organizer/certificates",
+      lockable: true,
+      activeCheck: (p: string) => p === "/dashboard/organizer/certificates",
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+        </svg>
+      ),
+    },
+    {
+      name: "Onboarding",
+      href: "/dashboard/onboarding",
+      lockable: false,
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
       ),
     },
   ];
 
-  const navItems = isAdminRoute ? adminNavItems : isOrganizerRoute ? organizerNavItems : userNavItems;
+  const visibleOrganizerNavItems = organizerOnboardingLocked
+    ? organizerNavItems.filter((item) => item.href === "/dashboard/onboarding")
+    : organizerNavItems;
+
+  const navItems = isAdminRoute
+    ? adminNavItems
+    : isOrganizerRoute
+      ? visibleOrganizerNavItems
+      : userNavItems;
+  const logoHref = "/";
 
   return (
-    <aside className="w-64 border-r bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex flex-col h-screen sticky top-0">
+    <aside className="w-64 border-r bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60 flex flex-col h-screen sticky top-0">
       {/* Logo Section */}
       <div className="p-6 border-b">
-        <Link href={isAdminRoute ? "/dashboard/admin" : isOrganizerRoute ? "/dashboard/organizer" : "/dashboard"} className="flex items-center space-x-2">
-          <div className="w-8 h-8 bg-gradient-to-br from-primary to-purple-600 rounded-lg flex items-center justify-center">
-            <span className="text-primary-foreground font-bold text-sm">CC</span>
-          </div>
-          <span className="text-lg font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
-            {isAdminRoute ? "CUET Admin" : isOrganizerRoute ? "Event Organizer" : "CUET Carnival"}
+        <Link href={logoHref} className="flex items-center gap-2.5">
+          <CuetCarnivalLogo size={34} />
+          <span className="text-base font-bold bg-linear-to-r from-primary to-purple-600 bg-clip-text text-transparent leading-tight">
+            {isAdminRoute
+              ? "CUET Admin"
+              : isOrganizerRoute
+                ? organizerOnboardingLocked
+                  ? "Organizer Setup"
+                  : "Event Organizer"
+                : "CUET Carnival"}
           </span>
         </Link>
       </div>
 
       {/* Navigation */}
       <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
-        {navItems.map((item) => (
-          <Link key={item.href} href={item.href}>
-            <Button
-              variant={isActiveRoute(item.href) ? "default" : "ghost"}
-              className={cn(
-                "w-full justify-start transition-all",
-                isActiveRoute(item.href)
-                  ? "bg-gradient-to-r from-primary to-purple-600 shadow-md" 
-                  : "hover:bg-muted"
-              )}
-            >
-              {item.icon}
-              <span className="ml-3">{item.name}</span>
-            </Button>
-          </Link>
-        ))}
+        {isOrganizerRoute && organizerOnboardingLocked ? (
+          <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+            Your organizer routes are locked. Complete onboarding to unlock everything.
+          </div>
+        ) : null}
+
+        {isOrganizerRoute && organizerOnboardingLocked ? (
+          <Button
+            type="button"
+            variant="ghost"
+            disabled
+            className="w-full justify-start cursor-not-allowed opacity-70"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 11c1.104 0 2 .896 2 2s-.896 2-2 2-2-.896-2-2 .896-2 2-2zm6 2v5a2 2 0 01-2 2H8a2 2 0 01-2-2v-5a2 2 0 012-2h1V9a3 3 0 116 0v2h1a2 2 0 012 2zm-7-2h2V9a1 1 0 10-2 0v2z"
+              />
+            </svg>
+            <span className="ml-3">Organizer Routes (Locked)</span>
+          </Button>
+        ) : null}
+
+        {navItems.map((item) => {
+          const isLockableItem = "lockable" in item ? item.lockable !== false : true;
+          const isLockedItem = Boolean(
+            isOrganizerRoute && organizerOnboardingLocked && isLockableItem
+          );
+          const isOnboardingItem = item.href === "/dashboard/onboarding";
+
+          if (isLockedItem) {
+            return (
+              <Button
+                key={item.name}
+                type="button"
+                variant="ghost"
+                disabled
+                className="w-full justify-start cursor-not-allowed opacity-55"
+              >
+                {item.icon}
+                <span className="ml-3">{item.name} (Locked)</span>
+                <svg
+                  className="ml-auto h-4 w-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 11c1.104 0 2 .896 2 2s-.896 2-2 2-2-.896-2-2 .896-2 2-2zm6 2v5a2 2 0 01-2 2H8a2 2 0 01-2-2v-5a2 2 0 012-2h1V9a3 3 0 116 0v2h1a2 2 0 012 2zm-7-2h2V9a1 1 0 10-2 0v2z"
+                  />
+                </svg>
+              </Button>
+            );
+          }
+
+          return (
+            <Link key={item.name} href={item.href}>
+              <Button
+                variant={isActiveRoute(item) ? "default" : "ghost"}
+                className={cn(
+                  "w-full justify-start transition-all",
+                  isActiveRoute(item)
+                    ? "bg-linear-to-r from-primary to-purple-600 shadow-md"
+                    : isOnboardingItem
+                      ? "border border-primary/20 bg-primary/10 hover:bg-primary/15"
+                      : "hover:bg-muted"
+                )}
+              >
+                {item.icon}
+                <span className="ml-3">{item.name}</span>
+              </Button>
+            </Link>
+          );
+        })}
       </nav>
 
       {/* Bottom Section */}
@@ -212,14 +356,23 @@ export function DashboardSidebar() {
           <span className="text-sm text-muted-foreground">Theme</span>
           <ThemeToggle />
         </div>
-        <Link href="/">
-          <Button variant="outline" className="w-full justify-start">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+        {/* User avatar */}
+        <div className="flex items-center gap-2 rounded-xl border bg-muted/30 px-3 py-2.5">
+          <UserAvatarMenu popoverSide="top" />
+          <span className="text-xs text-muted-foreground flex-1">Account</span>
+          <button
+            type="button"
+            onClick={() => void handleLogout()}
+            disabled={isLoggingOut}
+            className="h-7 w-7 flex items-center justify-center rounded-full hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50 shrink-0"
+            aria-label="Sign out"
+            title="Sign out"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
             </svg>
-            <span className="ml-3">Back to Home</span>
-          </Button>
-        </Link>
+          </button>
+        </div>
       </div>
     </aside>
   );

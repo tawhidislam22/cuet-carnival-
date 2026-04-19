@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AUTH_BASE_URL } from "@/lib/auth-endpoint";
-import { getCurrentUserProfile } from "@/lib/auth-client";
+import { getCurrentUserProfile, needsOrganizerOnboarding } from "@/lib/auth-client";
 import {
   Card,
   CardContent,
@@ -18,14 +18,44 @@ import {
 
 export function LoginForm() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGoogleSubmitting, setIsGoogleSubmitting] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     email: "",
     password: "",
   });
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("verified") === "1") {
+      setNotice("Email verified successfully. Your account is now active.");
+      return;
+    }
+
+    if (params.get("registered") === "1") {
+      const email = params.get("email");
+      setNotice(
+        email
+          ? `Verification email sent to ${email}. Please verify your email before logging in.`
+          : "Registration successful. Please verify your email before logging in."
+      );
+    }
+  }, []);
+
+  const getSafeRedirectTarget = () => {
+    if (typeof window === "undefined") {
+      return null;
+    }
+
+    const redirectTarget = new URLSearchParams(window.location.search).get("redirect");
+    return redirectTarget && redirectTarget.startsWith("/") ? redirectTarget : null;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,25 +72,40 @@ export function LoginForm() {
         body: JSON.stringify({
           email: formData.email,
           password: formData.password,
+          callbackURL: `${window.location.origin}/login?verified=1`,
         }),
       });
 
       if (!response.ok) {
         const payload = (await response.json().catch(() => null)) as
-          | { message?: string }
+          | { message?: string; code?: string }
           | null;
+
+        const isEmailNotVerified =
+          payload?.code === "EMAIL_NOT_VERIFIED" ||
+          /email\s+not\s+verified/i.test(payload?.message ?? "");
+
+        if (isEmailNotVerified) {
+          setError("Your email is not verified. We sent a verification link to your inbox.");
+          return;
+        }
+
         setError(payload?.message || "Login failed. Please check your credentials.");
         return;
       }
 
-      const redirectTarget = searchParams.get("redirect");
+      const redirectTarget = getSafeRedirectTarget();
 
       let targetPath = "/dashboard";
-      if (redirectTarget && redirectTarget.startsWith("/")) {
+      if (redirectTarget) {
         targetPath = redirectTarget;
       } else {
         const profile = await getCurrentUserProfile();
-        if (profile?.role === "organizer") {
+        if (needsOrganizerOnboarding(profile)) {
+          targetPath = "/dashboard/onboarding";
+        } else if (profile?.role === "admin") {
+          targetPath = "/dashboard/admin";
+        } else if (profile?.role === "organizer") {
           targetPath = "/dashboard/organizer";
         }
       }
@@ -79,9 +124,9 @@ export function LoginForm() {
     setIsGoogleSubmitting(true);
 
     try {
-      const redirectTarget = searchParams.get("redirect");
+      const redirectTarget = getSafeRedirectTarget();
       const callbackPath =
-        redirectTarget && redirectTarget.startsWith("/")
+        redirectTarget
           ? redirectTarget
           : "/dashboard";
 
@@ -133,6 +178,7 @@ export function LoginForm() {
                 type="email"
                 placeholder="m@example.com"
                 required
+                autoComplete="off"
                 value={formData.email}
                 onChange={(e) =>
                   setFormData({ ...formData, email: e.target.value })
@@ -153,6 +199,7 @@ export function LoginForm() {
                 id="password"
                 type="password"
                 required
+                autoComplete="new-password"
                 value={formData.password}
                 onChange={(e) =>
                   setFormData({ ...formData, password: e.target.value })
@@ -172,6 +219,7 @@ export function LoginForm() {
               {isGoogleSubmitting ? "Redirecting to Google..." : "Continue with Google"}
             </Button>
           </div>
+          {notice ? <p className="mt-3 text-sm text-emerald-700">{notice}</p> : null}
           {error ? <p className="mt-3 text-sm text-destructive">{error}</p> : null}
           <div className="mt-4 text-center text-sm">
             Don&apos;t have an account?{" "}

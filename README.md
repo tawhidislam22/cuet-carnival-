@@ -34,3 +34,31 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Route Testing Report
+
+This repository includes a full-page HTML report at project root:
+
+- `report-all-pages.html`
+
+It lists all current app pages (public + dashboard/admin routes) with route type badges and direct links.
+
+### Run the report page
+
+From project root, run:
+
+```bash
+pnpm report:serve
+```
+
+Then open:
+
+- `http://localhost:4173/report-all-pages.html`
+
+### Recommended test setup
+
+To verify navigation and API-driven pages:
+
+1. Start frontend: `pnpm dev`
+2. Start backend: `cd Backend && pnpm dev`
+3. Use the report page to open routes and test coverage quickly.

@@ -1,19 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { getAuthSession, getCurrentUserProfile, signOutAuth } from "@/lib/auth-client";
+import { CuetCarnivalLogo } from "@/components/ui/cuet-carnival-logo";
+import { UserAvatarMenu } from "@/components/ui/user-avatar-menu";
+import { getAuthSession } from "@/lib/auth-client";
 
 export function Navbar() {
   const pathname = usePathname();
-  const router = useRouter();
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [userRole, setUserRole] = useState<string>("user");
 
   const navItems = [
     { name: "Home", href: "/" },
@@ -26,37 +26,21 @@ export function Navbar() {
     async function loadSession() {
       const session = await getAuthSession();
       setIsAuthenticated(Boolean(session?.user));
-
-      if (session?.user) {
-        const profile = await getCurrentUserProfile();
-        setUserRole(profile?.role || "user");
-      } else {
-        setUserRole("user");
-      }
-
       setIsAuthLoading(false);
     }
-
     void loadSession();
   }, []);
 
-  const handleLogout = async () => {
-    await signOutAuth();
-    setIsAuthenticated(false);
-    setUserRole("user");
-    router.push("/login");
-    router.refresh();
-  };
-
-  const dashboardPath = userRole === "organizer" ? "/dashboard/organizer" : "/dashboard";
-
   return (
-    <nav className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <nav className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
-          <Link href="/" className="text-xl font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
-            CUET Carnival
+          <Link href="/" className="flex items-center gap-2.5">
+            <CuetCarnivalLogo size={36} />
+            <span className="text-xl font-bold bg-linear-to-r from-primary to-purple-600 bg-clip-text text-transparent hidden sm:block">
+              CUET Carnival
+            </span>
           </Link>
 
           {/* Navigation Links */}
@@ -76,20 +60,25 @@ export function Navbar() {
             ))}
           </div>
 
-          {/* Auth Buttons */}
+          {/* Right side */}
           <div className="flex items-center space-x-2">
             <ThemeToggle />
+
+            {/* Authenticated */}
             {!isAuthLoading && isAuthenticated ? (
               <>
-                <Link href={dashboardPath}>
-                  <Button variant="ghost">Dashboard</Button>
-                </Link>
-                <Button variant="outline" onClick={handleLogout}>
-                  Logout
-                </Button>
+                <UserAvatarMenu popoverSide="bottom" />
+                {!pathname.startsWith("/dashboard") ? (
+                  <Link href="/dashboard">
+                    <Button size="sm" variant="outline">
+                      Dashboard
+                    </Button>
+                  </Link>
+                ) : null}
               </>
             ) : null}
 
+            {/* Guest */}
             {!isAuthLoading && !isAuthenticated ? (
               <>
                 <Link href="/login">

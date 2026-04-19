@@ -15,7 +15,15 @@ export type CurrentUserProfile = {
   name: string | null;
   email: string;
   role: string;
+  onboardingCompleted?: boolean;
+  organizerClubName?: string | null;
+  organizerBio?: string | null;
+  organizerEventType?: string | null;
 } | null;
+
+export function needsOrganizerOnboarding(profile: CurrentUserProfile): boolean {
+  return Boolean(profile?.role === "organizer" && !profile?.onboardingCompleted);
+}
 
 export async function getAuthSession(): Promise<AuthSession> {
   const endpoints = ["/api/auth/get-session", "/api/auth/session"];

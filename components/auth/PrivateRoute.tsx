@@ -1,19 +1,27 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { getAuthSession } from "@/lib/auth-client";
 
 export function PrivateRoute({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const searchParams = useSearchParams();
   const [authStatus, setAuthStatus] = useState<"checking" | "authorized" | "unauthorized">("checking");
 
   const redirectPath = useMemo(() => {
-    const query = searchParams.toString();
-    return query ? `${pathname}?${query}` : pathname;
-  }, [pathname, searchParams]);
+    if (typeof window === "undefined") {
+      return pathname;
+    }
+
+    const search = window.location.search || "";
+
+    if (!search) {
+      return pathname;
+    }
+
+    return `${pathname}${search}`;
+  }, [pathname]);
 
   useEffect(() => {
     async function verifySession() {

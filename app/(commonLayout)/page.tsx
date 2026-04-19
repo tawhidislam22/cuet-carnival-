@@ -359,7 +359,7 @@ export default function Home() {
               <h2 className="text-3xl md:text-4xl font-bold tracking-tight">Featured Organizers</h2>
               <p className="text-muted-foreground mt-2">Experts recognized for hosting outstanding events</p>
             </div>
-            <Link href="/events" className="text-base font-semibold text-blue-600 hover:text-blue-700 transition-colors">
+            <Link href="/organizers" className="text-base font-semibold text-blue-600 hover:text-blue-700 transition-colors">
               View all organizers
             </Link>
           </div>

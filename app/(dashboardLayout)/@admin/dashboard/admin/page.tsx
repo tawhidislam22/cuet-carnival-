@@ -1,22 +1,92 @@
+"use client";
+
 import Link from "next/link";
+import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { API_BASE_URL } from "@/lib/api";
 
-const kpis = [
-  { label: "Total Events", value: "24" },
-  { label: "Total Registrations", value: "3,842" },
-  { label: "Active Volunteers", value: "126" },
-  { label: "Pending Approvals", value: "14" },
-];
-
-const recentActivities = [
-  "CodeStorm Hackathon updated by Event Team",
-  "128 new registrations in last 24 hours",
-  "Photography Workshop venue changed",
-  "2 certificates approved by admin",
-];
+type AdminOverview = {
+  generatedAt?: string;
+  kpis: Array<{
+    label: string;
+    value: number;
+  }>;
+  recentActivity: string[];
+};
 
 export default function AdminDashboardPage() {
+  const [data, setData] = useState<AdminOverview | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadAdminOverview = useCallback(async (silent = false) => {
+    if (!silent) {
+      setIsLoading(true);
+      setError(null);
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/dashboard/admin/overview`, {
+        cache: "no-store",
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        if (response.status === 403) {
+          setError("Admin access required.");
+        } else if (response.status === 401) {
+          setError("Please login first.");
+        } else {
+          setError("Failed to load admin overview.");
+        }
+        setData(null);
+        return;
+      }
+
+      const payload = (await response.json()) as { data?: AdminOverview };
+      setData(payload.data ?? null);
+      setError(null);
+    } catch {
+      setError("Unable to connect to dashboard service.");
+      setData(null);
+    } finally {
+      if (!silent) {
+        setIsLoading(false);
+      }
+    }
+  }, []);
+
+  const lastSyncedLabel = data?.generatedAt
+    ? new Date(data.generatedAt).toLocaleString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+        second: "2-digit",
+      })
+    : null;
+
+  useEffect(() => {
+    void loadAdminOverview();
+
+    const pollId = window.setInterval(() => {
+      void loadAdminOverview(true);
+    }, 30000);
+
+    const handleWindowFocus = () => {
+      void loadAdminOverview(true);
+    };
+
+    window.addEventListener("focus", handleWindowFocus);
+
+    return () => {
+      window.clearInterval(pollId);
+      window.removeEventListener("focus", handleWindowFocus);
+    };
+  }, [loadAdminOverview]);
+
   return (
     <div className="min-h-screen bg-muted/30">
       <div className="container mx-auto max-w-7xl px-4 py-8">
@@ -26,22 +96,40 @@ export default function AdminDashboardPage() {
             <p className="mt-1 text-muted-foreground">
               Central control panel for CUET Carnival operations and analytics.
             </p>
+            {isLoading ? <p className="mt-2 text-sm text-muted-foreground">Loading admin dashboard...</p> : null}
+            {error ? <p className="mt-2 text-sm text-destructive">{error}</p> : null}
+            {!isLoading && !error && lastSyncedLabel ? (
+              <p className="mt-2 text-xs text-muted-foreground">Live API sync: {lastSyncedLabel}</p>
+            ) : null}
           </div>
-          <Link href="/events">
-            <Button>Create Announcement</Button>
-          </Link>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => void loadAdminOverview()} disabled={isLoading}>
+              Refresh
+            </Button>
+            <Link href="/events">
+              <Button>Create Announcement</Button>
+            </Link>
+          </div>
         </div>
 
         <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {kpis.map((item) => (
+          {(data?.kpis ?? []).map((item) => (
             <Card key={item.label}>
               <CardHeader className="pb-2">
                 <CardDescription>{item.label}</CardDescription>
-                <CardTitle className="text-3xl">{item.value}</CardTitle>
+                <CardTitle className="text-3xl">{item.value.toLocaleString()}</CardTitle>
               </CardHeader>
             </Card>
           ))}
         </div>
+
+        {!isLoading && !error && (data?.kpis?.length ?? 0) === 0 ? (
+          <Card className="mb-8">
+            <CardContent className="pt-6 text-sm text-muted-foreground">
+              No KPI data available yet.
+            </CardContent>
+          </Card>
+        ) : null}
 
         <div className="grid gap-6 lg:grid-cols-3">
           <Card className="lg:col-span-2">
@@ -51,11 +139,14 @@ export default function AdminDashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {recentActivities.map((activity) => (
+                {(data?.recentActivity ?? []).map((activity) => (
                   <div key={activity} className="rounded-lg border p-3 text-sm">
                     {activity}
                   </div>
                 ))}
+                {!isLoading && !error && (data?.recentActivity?.length ?? 0) === 0 ? (
+                  <p className="text-sm text-muted-foreground">No recent activities found.</p>
+                ) : null}
               </div>
             </CardContent>
           </Card>

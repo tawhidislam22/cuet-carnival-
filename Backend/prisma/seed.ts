@@ -1,8 +1,48 @@
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import { hashPassword } from "better-auth/crypto";
+import { prisma } from "../src/config/prisma.js";
 
 async function main() {
+  const adminEmail = "admin@cuet.ac.bd";
+  const adminPassword = "Admin@123456";
+
+  const adminUser = await prisma.user.upsert({
+    where: { email: adminEmail },
+    update: {
+      name: "CUET Admin",
+      role: "admin",
+      emailVerified: true,
+      onboardingCompleted: true,
+    },
+    create: {
+      name: "CUET Admin",
+      email: adminEmail,
+      role: "admin",
+      emailVerified: true,
+      onboardingCompleted: true,
+    },
+  });
+
+  const adminPasswordHash = await hashPassword(adminPassword);
+
+  await prisma.account.upsert({
+    where: {
+      providerId_accountId: {
+        providerId: "credential",
+        accountId: adminUser.id,
+      },
+    },
+    update: {
+      password: adminPasswordHash,
+      userId: adminUser.id,
+    },
+    create: {
+      providerId: "credential",
+      accountId: adminUser.id,
+      userId: adminUser.id,
+      password: adminPasswordHash,
+    },
+  });
+
   const demoUser = await prisma.user.upsert({
     where: { email: "john.doe@cuet.ac.bd" },
     update: {
@@ -126,7 +166,8 @@ async function main() {
     });
   }
 
-  console.log("Seed complete: user, events, registrations");
+  console.log("Seed complete: admin user, demo user, events, registrations");
+  console.log(`Admin credentials => email: ${adminEmail} | password: ${adminPassword}`);
 }
 
 main()

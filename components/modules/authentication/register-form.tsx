@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AUTH_BASE_URL } from "@/lib/auth-endpoint";
-import { getCurrentUserProfile } from "@/lib/auth-client";
 import {
   Card,
   CardContent,
@@ -31,9 +30,19 @@ export function RegisterForm() {
     confirmPassword: "",
   });
 
+  const CUET_EMAIL_PATTERN = /^u\d+@student\.cuet\.ac\.bd$/i;
+
+  const validateCuetEmail = (email: string) =>
+    CUET_EMAIL_PATTERN.test(email);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    if (!validateCuetEmail(formData.email)) {
+      setError("Please use your CUET student email (e.g. u2204076@student.cuet.ac.bd).");
+      return;
+    }
 
     if (formData.password !== formData.confirmPassword) {
       setError("Passwords do not match.");
@@ -54,6 +63,7 @@ export function RegisterForm() {
           email: formData.email,
           password: formData.password,
           role: role === "student" ? "user" : "organizer",
+          callbackURL: `${window.location.origin}/login?verified=1`,
         }),
       });
 
@@ -65,10 +75,12 @@ export function RegisterForm() {
         return;
       }
 
-      const profile = await getCurrentUserProfile();
-      const targetPath = profile?.role === "organizer" ? "/dashboard/organizer" : "/dashboard";
+      const searchParams = new URLSearchParams({
+        registered: "1",
+        email: formData.email,
+      });
 
-      router.push(targetPath);
+      router.push(`/login?${searchParams.toString()}`);
       router.refresh();
     } catch {
       setError("Unable to connect to authentication server.");
@@ -78,6 +90,11 @@ export function RegisterForm() {
   };
 
   const handleGoogleRegister = async () => {
+    setError(null);
+    setError("Google sign-in requires a CUET Google Workspace account (u{studentId}@student.cuet.ac.bd). If your CUET account uses Google, click OK to continue.");
+
+    // Brief delay so the user sees the notice before redirect
+    await new Promise((resolve) => setTimeout(resolve, 2000));
     setError(null);
     setIsGoogleSubmitting(true);
 
@@ -182,17 +199,20 @@ export function RegisterForm() {
               </div>
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">CUET Student Email</Label>
               <Input
                 id="email"
                 type="email"
-                placeholder="m@example.com"
+                placeholder="u2204076@student.cuet.ac.bd"
                 required
                 value={formData.email}
                 onChange={(e) =>
                   setFormData({ ...formData, email: e.target.value })
                 }
               />
+              <p className="text-xs text-muted-foreground">
+                Only <span className="font-medium">@student.cuet.ac.bd</span> emails are accepted.
+              </p>
             </div>
             <div className="grid gap-2">
               <Label htmlFor="password">Password</Label>

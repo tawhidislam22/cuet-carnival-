@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { API_BASE_URL } from "@/lib/api";
-import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 
 type EventItem = {
@@ -22,18 +22,20 @@ type EventItem = {
   capacity: number;
 };
 
-export default function EventsPage() {
+function normalizeCategory(value: string | null | undefined) {
+  const normalized = (value || "all").trim().toLowerCase();
+  return normalized || "all";
+}
+
+function EventsPageContent() {
   const searchParams = useSearchParams();
-  const initialCategory = (searchParams.get("category") || "all").trim().toLowerCase();
+  const router = useRouter();
+  const pathname = usePathname();
+
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState(initialCategory || "all");
   const [allEvents, setAllEvents] = useState<EventItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const queryCategory = (searchParams.get("category") || "all").trim().toLowerCase();
-    setSelectedCategory(queryCategory || "all");
-  }, [searchParams]);
+  const selectedCategory = normalizeCategory(searchParams.get("category"));
 
   useEffect(() => {
     async function loadEvents() {
@@ -53,10 +55,23 @@ export default function EventsPage() {
 
   const categories = useMemo(() => {
     const fromEvents = Array.from(
-      new Set(allEvents.map((event) => event.category?.trim().toLowerCase()))
+      new Set(allEvents.map((event) => normalizeCategory(event.category)))
     ).filter(Boolean) as string[];
     return ["all", ...fromEvents];
   }, [allEvents]);
+
+  const handleCategorySelect = (category: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+
+    if (category === "all") {
+      params.delete("category");
+    } else {
+      params.set("category", category);
+    }
+
+    const query = params.toString();
+    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+  };
 
   const formatDateTime = (date: string) => {
     const parsed = new Date(date);
@@ -69,7 +84,7 @@ export default function EventsPage() {
   const filteredEvents = allEvents.filter((event) => {
     const matchesSearch = event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          event.description.toLowerCase().includes(searchQuery.toLowerCase());
-    const eventCategory = (event.category || "").trim().toLowerCase();
+    const eventCategory = normalizeCategory(event.category);
     const matchesCategory = selectedCategory === "all" || eventCategory === selectedCategory;
     return matchesSearch && matchesCategory;
   });
@@ -102,7 +117,7 @@ export default function EventsPage() {
                 <Button
                   key={category}
                   variant={selectedCategory === category ? "default" : "outline"}
-                  onClick={() => setSelectedCategory(category)}
+                  onClick={() => handleCategorySelect(category)}
                   className="whitespace-nowrap"
                 >
                   {category.charAt(0).toUpperCase() + category.slice(1)}
@@ -191,5 +206,21 @@ export default function EventsPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function EventsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen py-8 px-4">
+          <div className="container mx-auto">
+            <p className="text-sm text-muted-foreground">Loading events...</p>
+          </div>
+        </div>
+      }
+    >
+      <EventsPageContent />
+    </Suspense>
   );
 }

@@ -124,3 +124,187 @@ export async function getCertificatesByUserId(userId) {
         certificateCode: `CERT-${registration.event.id.slice(0, 8).toUpperCase()}`,
     }));
 }
+export async function getAdminOverview() {
+    const now = new Date();
+    const [totalEvents, totalRegistrations, totalOrganizers, pendingApprovals, recentRegistrations,] = await Promise.all([
+        prisma.event.count(),
+        prisma.eventRegistration.count(),
+        prisma.user.count({ where: { role: "organizer" } }),
+        prisma.event.count({ where: { isPublished: false } }),
+        prisma.eventRegistration.findMany({
+            orderBy: { registeredAt: "desc" },
+            take: 6,
+            include: {
+                user: { select: { name: true, email: true } },
+                event: { select: { title: true } },
+            },
+        }),
+    ]);
+    const recentActivity = recentRegistrations.map((registration) => {
+        const actor = registration.user.name?.trim() || registration.user.email;
+        return `${actor} registered for ${registration.event.title}`;
+    });
+    if (pendingApprovals > 0) {
+        recentActivity.push(`${pendingApprovals} event(s) are waiting for admin approval`);
+    }
+    return {
+        generatedAt: now.toISOString(),
+        kpis: [
+            { label: "Total Events", value: totalEvents },
+            { label: "Total Registrations", value: totalRegistrations },
+            { label: "Active Organizers", value: totalOrganizers },
+            { label: "Pending Approvals", value: pendingApprovals },
+        ],
+        recentActivity,
+    };
+}
+export async function getAdminEvents() {
+    const now = new Date();
+    const events = await prisma.event.findMany({
+        orderBy: { startsAt: "asc" },
+        include: {
+            organizer: {
+                select: { id: true, name: true, email: true },
+            },
+            _count: {
+                select: { registrations: true },
+            },
+        },
+    });
+    return {
+        generatedAt: now.toISOString(),
+        events: events.map((event) => ({
+            id: event.id,
+            name: event.title,
+            category: event.category,
+            date: event.startsAt,
+            status: event.isPublished ? "Published" : "Draft",
+            seats: event.capacity,
+            attendees: event._count.registrations,
+            organizerName: event.organizer.name ?? event.organizer.email,
+        })),
+    };
+}
+export async function getAdminUsers() {
+    const users = await prisma.user.findMany({
+        where: { role: { not: "admin" } },
+        orderBy: { createdAt: "desc" },
+        select: {
+            id: true,
+            name: true,
+            email: true,
+            department: true,
+            studentId: true,
+            role: true,
+            emailVerified: true,
+            registrations: {
+                select: { id: true },
+            },
+        },
+    });
+    return users.map((user) => ({
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        dept: user.department,
+        studentId: user.studentId,
+        role: user.role,
+        events: user.registrations.length,
+        status: user.emailVerified ? "Active" : "Unverified",
+    }));
+}
+function formatPercent(value) {
+    if (!Number.isFinite(value)) {
+        return "0%";
+    }
+    return `${Math.round(value)}%`;
+}
+function formatGrowth(currentPeriod, previousPeriod) {
+    if (previousPeriod <= 0) {
+        return currentPeriod > 0 ? "+100%" : "0%";
+    }
+    const delta = ((currentPeriod - previousPeriod) / previousPeriod) * 100;
+    const rounded = Math.round(delta);
+    return `${rounded >= 0 ? "+" : ""}${rounded}%`;
+}
+export async function getAdminReports() {
+    const now = new Date();
+    const currentWindowStart = new Date(now);
+    currentWindowStart.setDate(now.getDate() - 30);
+    const previousWindowStart = new Date(currentWindowStart);
+    previousWindowStart.setDate(currentWindowStart.getDate() - 30);
+    const [totalRegistrations, currentPeriodRegistrations, previousPeriodRegistrations, endedConfirmedRegistrations, allEvents,] = await Promise.all([
+        prisma.eventRegistration.count(),
+        prisma.eventRegistration.count({
+            where: {
+                registeredAt: {
+                    gte: currentWindowStart,
+                },
+            },
+        }),
+        prisma.eventRegistration.count({
+            where: {
+                registeredAt: {
+                    gte: previousWindowStart,
+                    lt: currentWindowStart,
+                },
+            },
+        }),
+        prisma.eventRegistration.count({
+            where: {
+                status: "Confirmed",
+                event: {
+                    endsAt: {
+                        lt: now,
+                    },
+                },
+            },
+        }),
+        prisma.event.findMany({
+            include: {
+                _count: {
+                    select: { registrations: true },
+                },
+            },
+        }),
+    ]);
+    const publishedEvents = allEvents.filter((event) => event.isPublished);
+    const totalCapacity = publishedEvents.reduce((sum, event) => sum + event.capacity, 0);
+    const filledSeats = publishedEvents.reduce((sum, event) => sum + event._count.registrations, 0);
+    const fillRate = totalCapacity > 0 ? (filledSeats / totalCapacity) * 100 : 0;
+    const categoryCounts = new Map();
+    for (const event of allEvents) {
+        categoryCounts.set(event.category, (categoryCounts.get(event.category) ?? 0) + 1);
+    }
+    const topCategory = [...categoryCounts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? "N/A";
+    return {
+        reportCards: [
+            {
+                title: "Registration Growth",
+                value: formatGrowth(currentPeriodRegistrations, previousPeriodRegistrations),
+                note: "Compared to previous 30 days",
+            },
+            {
+                title: "Capacity Fill Rate",
+                value: formatPercent(fillRate),
+                note: "Across all published events",
+            },
+            {
+                title: "Certificates Eligible",
+                value: String(endedConfirmedRegistrations),
+                note: "Confirmed registrations in completed events",
+            },
+            {
+                title: "Total Registrations",
+                value: String(totalRegistrations),
+                note: "All-time participant registrations",
+            },
+        ],
+        insights: [
+            `Top category by events: ${topCategory}`,
+            `Published events: ${publishedEvents.length}`,
+            `Total seats filled: ${filledSeats} of ${totalCapacity}`,
+            `Recent 30-day registrations: ${currentPeriodRegistrations}`,
+        ],
+    };
+}

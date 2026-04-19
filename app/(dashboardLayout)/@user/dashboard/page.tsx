@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
 import { API_BASE_URL } from "@/lib/api";
-import { getCurrentUserProfile } from "@/lib/auth-client";
+import { getCurrentUserProfile, needsOrganizerOnboarding } from "@/lib/auth-client";
 
 type DashboardData = {
   user: {
@@ -40,6 +40,11 @@ export default function UserDashboard() {
   useEffect(() => {
     async function loadDashboard() {
       const profile = await getCurrentUserProfile();
+      if (needsOrganizerOnboarding(profile)) {
+        router.replace("/dashboard/onboarding");
+        return;
+      }
+
       if (profile?.role === "organizer") {
         router.replace("/dashboard/organizer");
         return;

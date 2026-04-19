@@ -1,7 +1,9 @@
-declare module "express-serve-static-core" {
-  interface Request {
-    authUserId?: string;
-    authUserRole?: string;
+declare global {
+  namespace Express {
+    interface Request {
+      authUserId?: string;
+      authUserRole?: string;
+    }
   }
 }
 
