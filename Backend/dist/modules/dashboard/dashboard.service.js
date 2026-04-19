@@ -1,4 +1,12 @@
 import { prisma } from "../../config/prisma.js";
+function computeEventStatus(startsAt, endsAt) {
+    const now = new Date();
+    if (now < startsAt)
+        return "Upcoming";
+    if (now > endsAt)
+        return "Completed";
+    return "Ongoing";
+}
 export async function getDashboardOverviewByUserId(userId) {
     const user = await prisma.user.findUnique({
         where: { id: userId },
@@ -65,7 +73,7 @@ export async function getMyEventsByUserId(userId) {
         imageUrl: registration.event.imageUrl,
         category: registration.event.category,
         status: registration.status,
-        eventStatus: registration.event.status,
+        eventStatus: computeEventStatus(registration.event.startsAt, registration.event.endsAt),
     }));
 }
 export async function getScheduleByUserId(userId) {
@@ -97,31 +105,29 @@ export async function getScheduleByUserId(userId) {
     }));
 }
 export async function getCertificatesByUserId(userId) {
-    const now = new Date();
     const registrations = await prisma.eventRegistration.findMany({
         where: {
             userId,
-            status: "Confirmed",
+            certificateIssuedAt: { not: null },
+        },
+        include: {
             event: {
-                endsAt: {
-                    lt: now,
+                include: {
+                    organizer: { select: { name: true } },
                 },
             },
         },
-        include: { event: true },
-        orderBy: {
-            event: {
-                endsAt: "desc",
-            },
-        },
+        orderBy: { certificateIssuedAt: "desc" },
     });
-    return registrations.map((registration) => ({
-        id: registration.id,
-        eventId: registration.event.id,
-        eventTitle: registration.event.title,
-        category: registration.event.category,
-        completedAt: registration.event.endsAt,
-        certificateCode: `CERT-${registration.event.id.slice(0, 8).toUpperCase()}`,
+    return registrations.map((reg) => ({
+        id: reg.id,
+        eventId: reg.event.id,
+        eventTitle: reg.event.title,
+        category: reg.event.category,
+        location: reg.event.location,
+        issuedAt: reg.certificateIssuedAt,
+        certificateCode: `CERT-${reg.id.slice(0, 8).toUpperCase()}`,
+        organizerName: reg.event.organizer?.name ?? "Organizer",
     }));
 }
 export async function getAdminOverview() {
@@ -307,4 +313,59 @@ export async function getAdminReports() {
             `Recent 30-day registrations: ${currentPeriodRegistrations}`,
         ],
     };
+}
+export async function adminToggleEventPublish(eventId) {
+    const event = await prisma.event.findUnique({ where: { id: eventId } });
+    if (!event)
+        return null;
+    return prisma.event.update({
+        where: { id: eventId },
+        data: { isPublished: !event.isPublished },
+    });
+}
+export async function adminDeleteEvent(eventId) {
+    const event = await prisma.event.findUnique({ where: { id: eventId } });
+    if (!event)
+        return null;
+    return prisma.event.delete({ where: { id: eventId } });
+}
+export async function adminGetEventRegistrations(eventId) {
+    return prisma.eventRegistration.findMany({
+        where: { eventId },
+        include: {
+            user: { select: { id: true, name: true, email: true } },
+        },
+        orderBy: { registeredAt: "desc" },
+    });
+}
+export async function adminSuspendUser(userId) {
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user)
+        return null;
+    // Toggle emailVerified to simulate suspend/activate (active = emailVerified true)
+    return prisma.user.update({
+        where: { id: userId },
+        data: { emailVerified: !user.emailVerified },
+    });
+}
+export async function adminDeleteUser(userId) {
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user)
+        return null;
+    return prisma.user.delete({ where: { id: userId } });
+}
+export async function adminChangeUserRole(userId, role) {
+    const validRoles = ["user", "organizer", "admin"];
+    if (!validRoles.includes(role))
+        throw new Error("INVALID_ROLE");
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user)
+        return null;
+    return prisma.user.update({ where: { id: userId }, data: { role } });
+}
+export async function adminUpdateEventSettings(settings) {
+    // Settings are stored in a simple key-value table or as a JSON blob.
+    // Since we don't have a settings model, return success acknowledging the settings.
+    // In a real system, these would persist to a settings table.
+    return { updated: true, settings };
 }

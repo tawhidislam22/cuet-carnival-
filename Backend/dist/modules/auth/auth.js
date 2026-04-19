@@ -1,7 +1,8 @@
-import { betterAuth } from "better-auth";
+import { betterAuth, APIError } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { prisma } from "../../config/prisma.js";
 import { env } from "../../config/env.js";
+const CUET_EMAIL_PATTERN = /^u\d+@student\.cuet\.ac\.bd$/i;
 let hasLoggedGmailPasswordFormatWarning = false;
 const isGmailHost = (host) => {
     const normalized = host.trim().toLowerCase();
@@ -26,7 +27,7 @@ const getSmtpTransporter = async () => {
         !env.SMTP_FROM_EMAIL) {
         return null;
     }
-    const nodemailerModule = await (0, eval)("import('nodemailer')").catch(() => null);
+    const nodemailerModule = await import("nodemailer").catch(() => null);
     if (!nodemailerModule) {
         throw new Error("SMTP is configured but 'nodemailer' is not installed. Run: npm install nodemailer @types/nodemailer");
     }
@@ -124,6 +125,20 @@ export const auth = betterAuth({
     secret: env.BETTER_AUTH_SECRET,
     baseURL: env.BETTER_AUTH_URL,
     trustedOrigins: [env.CLIENT_ORIGIN],
+    databaseHooks: {
+        user: {
+            create: {
+                before: async (user) => {
+                    if (!CUET_EMAIL_PATTERN.test(user.email)) {
+                        throw new APIError("BAD_REQUEST", {
+                            message: "Only CUET student emails (u{studentId}@student.cuet.ac.bd) are allowed to register.",
+                        });
+                    }
+                    return { data: user };
+                },
+            },
+        },
+    },
     socialProviders: env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET
         ? {
             google: {

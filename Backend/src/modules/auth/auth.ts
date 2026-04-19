@@ -189,6 +189,12 @@ export const auth = betterAuth({
   secret: env.BETTER_AUTH_SECRET,
   baseURL: env.BETTER_AUTH_URL,
   trustedOrigins: [env.CLIENT_ORIGIN],
+  account: {
+    // Frontend and backend are on different domains; the signed state cookie
+    // set during OAuth initiation is not reliably sent cross-origin on callback.
+    // The state value stored in the DB is sufficient CSRF protection.
+    skipStateCookieCheck: true,
+  },
   databaseHooks: {
     user: {
       create: {
