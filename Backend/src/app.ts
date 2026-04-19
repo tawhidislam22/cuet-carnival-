@@ -4,8 +4,9 @@ import { fileURLToPath } from "url";
 import express from "express";
 import cors from "cors";
 import morgan from "morgan";
+import { toNodeHandler } from "better-auth/node";
 import { env } from "./config/env.js";
-import { authRouter } from "./modules/auth/auth.routes.js";
+import { auth } from "./modules/auth/auth.js";
 import { usersRouter } from "./modules/users/users.routes.js";
 import { eventsRouter } from "./modules/events/events.routes.js";
 import { dashboardRouter } from "./modules/dashboard/dashboard.routes.js";
@@ -28,7 +29,7 @@ app.get("/api/health", (_req, res) => {
   res.json({ status: "ok" });
 });
 
-app.use("/api/auth", authRouter);
+app.use("/api/auth/*", toNodeHandler(auth));
 app.use("/api/users", usersRouter);
 app.use("/api/events", eventsRouter);
 app.use("/api/dashboard", dashboardRouter);

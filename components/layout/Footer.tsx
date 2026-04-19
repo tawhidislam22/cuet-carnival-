@@ -20,7 +20,7 @@ export function Footer() {
             <ul className="space-y-2 text-sm">
               <li>
                 <Link
-                  href="/home"
+                  href="/"
                   className="text-muted-foreground hover:text-foreground transition-colors"
                 >
                   Home
@@ -51,7 +51,7 @@ export function Footer() {
             <ul className="space-y-2 text-sm">
               <li>
                 <Link
-                  href="/home"
+                  href="/events"
                   className="text-muted-foreground hover:text-foreground transition-colors"
                 >
                   Upcoming Events
@@ -59,7 +59,7 @@ export function Footer() {
               </li>
               <li>
                 <Link
-                  href="/home"
+                  href="/events"
                   className="text-muted-foreground hover:text-foreground transition-colors"
                 >
                   Past Events
