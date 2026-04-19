@@ -9,6 +9,23 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { API_BASE_URL } from "@/lib/api";
 
+const IMGBB_API_KEY = process.env.NEXT_PUBLIC_IMGBB_API_KEY;
+
+async function uploadToImgBB(file: File): Promise<string> {
+  if (!IMGBB_API_KEY) throw new Error("ImgBB API key not configured");
+  const formData = new FormData();
+  formData.append("image", file);
+  const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
+    method: "POST",
+    body: formData,
+  });
+  if (!res.ok) throw new Error("Image upload failed");
+  const json = (await res.json()) as { data?: { url?: string } };
+  const url = json?.data?.url;
+  if (!url) throw new Error("Image upload failed: no URL returned");
+  return url;
+}
+
 type EventForm = {
   title: string;
   description: string;
@@ -120,18 +137,28 @@ export default function UpdateEventPage() {
       setImageError("Please choose an image file first.");
       return;
     }
+    if (!file.type.startsWith("image/")) {
+      setImageError("Please select a valid image file.");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setImageError("Image must be smaller than 5MB.");
+      return;
+    }
 
     setIsUploadingImage(true);
     setImageError(null);
 
-    const formData = new FormData();
-    formData.append("image", file);
-
     try {
-      const res = await fetch(`${API_BASE_URL}/events/${eventId}/image`, {
-        method: "POST",
+      // Upload directly to ImgBB — no backend file storage needed
+      const imgbbUrl = await uploadToImgBB(file);
+
+      // Persist the URL on the event via PATCH
+      const res = await fetch(`${API_BASE_URL}/events/${eventId}`, {
+        method: "PATCH",
         credentials: "include",
-        body: formData,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageUrl: imgbbUrl }),
       });
 
       if (!res.ok) {
@@ -139,19 +166,16 @@ export default function UpdateEventPage() {
         setImageError(
           res.status === 403
             ? "You are not allowed to change this event's image."
-            : payload?.message || "Image upload failed."
+            : (payload as { message?: string } | null)?.message || "Image upload failed."
         );
         return;
       }
 
-      const payload = await res.json();
-      const newUrl = resolveImageUrl(payload?.data?.imageUrl);
-      setCurrentImageUrl(newUrl);
-      setImagePreview(newUrl);
-      // Reset file input
+      setCurrentImageUrl(imgbbUrl);
+      setImagePreview(imgbbUrl);
       if (fileInputRef.current) fileInputRef.current.value = "";
     } catch {
-      setImageError("Unable to upload image.");
+      setImageError("Unable to upload image. Make sure IMGBB is configured.");
     } finally {
       setIsUploadingImage(false);
     }

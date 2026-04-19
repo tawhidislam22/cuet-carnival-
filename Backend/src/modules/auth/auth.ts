@@ -195,6 +195,15 @@ export const auth = betterAuth({
     // The state value stored in the DB is sufficient CSRF protection.
     skipStateCookieCheck: true,
   },
+  advanced: {
+    // Frontend (cuet-carnival.vercel.app) and backend (backend-beta-ecru-60.vercel.app)
+    // are on different domains. Session cookies must be SameSite=None;Secure so that
+    // cross-origin fetch requests with credentials:include actually send the cookie.
+    defaultCookieAttributes: {
+      sameSite: "none",
+      secure: true,
+    },
+  },
   databaseHooks: {
     user: {
       create: {
