@@ -20,8 +20,15 @@ import {
 import { createEventSchema, updateEventSchema, registerForEventSchema } from "./events.schema.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const uploadsDir = path.resolve(__dirname, "../../../../public/uploads/events");
-if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+// Vercel serverless has a read-only filesystem except /tmp
+const uploadsDir = process.env.VERCEL
+  ? "/tmp/uploads/events"
+  : path.resolve(__dirname, "../../../../public/uploads/events");
+try {
+  if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+} catch {
+  // ignore on read-only filesystems
+}
 
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => cb(null, uploadsDir),

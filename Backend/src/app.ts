@@ -17,9 +17,12 @@ app.use(cors({ origin: env.CLIENT_ORIGIN, credentials: true }));
 app.use(morgan("dev"));
 app.use(express.json());
 
-// Serve uploaded event images as static files
+// Serve uploaded event images as static files (local dev only)
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-app.use("/uploads", express.static(path.resolve(__dirname, "../../public/uploads")));
+const uploadsPath = process.env.VERCEL
+  ? "/tmp/uploads"
+  : path.resolve(__dirname, "../../public/uploads");
+app.use("/uploads", express.static(uploadsPath));
 
 app.get("/api/health", (_req, res) => {
   res.json({ status: "ok" });
