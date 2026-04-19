@@ -29,7 +29,7 @@ app.get("/api/health", (_req, res) => {
   res.json({ status: "ok" });
 });
 
-app.use("/api/auth/*", toNodeHandler(auth));
+app.all("/api/auth/*", toNodeHandler(auth));
 app.use("/api/users", usersRouter);
 app.use("/api/events", eventsRouter);
 app.use("/api/dashboard", dashboardRouter);
