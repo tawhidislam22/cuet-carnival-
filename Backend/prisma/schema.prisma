@@ -90,46 +90,16 @@ model Event {
 }
 
 model EventRegistration {
-  id                  String    @id @default(cuid())
-  status              String    @default("Confirmed")
-  registeredAt        DateTime  @default(now())
-  certificateIssuedAt DateTime?
-  studentId           String?
-  department          String?
-  hall                String?
-  userId              String
-  eventId             String
+  id           String   @id @default(cuid())
+  status       String   @default("Confirmed")
+  registeredAt DateTime @default(now())
+  studentId    String?
+  department   String?
+  hall         String?
+  userId       String
+  eventId      String
   event        Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, eventId])
-}
-
-model Faculty {
-  id         String          @id @default(cuid())
-  name       String          @unique
-  createdAt  DateTime        @default(now())
-  updatedAt  DateTime        @updatedAt
-  categories EventCategory[]
-  venues     Venue[]
-}
-
-model EventCategory {
-  id        String   @id @default(cuid())
-  name      String
-  facultyId String
-  faculty   Faculty  @relation(fields: [facultyId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
-
-  @@unique([name, facultyId])
-}
-
-model Venue {
-  id        String   @id @default(cuid())
-  name      String
-  facultyId String
-  faculty   Faculty  @relation(fields: [facultyId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
-
-  @@unique([name, facultyId])
 }

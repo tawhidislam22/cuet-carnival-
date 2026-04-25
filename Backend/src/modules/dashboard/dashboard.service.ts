@@ -1,12 +1,5 @@
 import { prisma } from "../../config/prisma.js";
 
-function computeEventStatus(startsAt: Date, endsAt: Date): string {
-  const now = new Date();
-  if (now < startsAt) return "Upcoming";
-  if (now > endsAt) return "Completed";
-  return "Ongoing";
-}
-
 export async function getDashboardOverviewByUserId(userId: string) {
   const user = await prisma.user.findUnique({
     where: { id: userId },
@@ -80,7 +73,7 @@ export async function getMyEventsByUserId(userId: string) {
     imageUrl: registration.event.imageUrl,
     category: registration.event.category,
     status: registration.status,
-    eventStatus: computeEventStatus(registration.event.startsAt, registration.event.endsAt),
+    eventStatus: registration.event.status,
   }));
 }
 
@@ -116,30 +109,33 @@ export async function getScheduleByUserId(userId: string) {
 }
 
 export async function getCertificatesByUserId(userId: string) {
+  const now = new Date();
+
   const registrations = await prisma.eventRegistration.findMany({
     where: {
       userId,
-      certificateIssuedAt: { not: null },
-    },
-    include: {
+      status: "Confirmed",
       event: {
-        include: {
-          organizer: { select: { name: true } },
+        endsAt: {
+          lt: now,
         },
       },
     },
-    orderBy: { certificateIssuedAt: "desc" },
+    include: { event: true },
+    orderBy: {
+      event: {
+        endsAt: "desc",
+      },
+    },
   });
 
-  return registrations.map((reg) => ({
-    id: reg.id,
-    eventId: reg.event.id,
-    eventTitle: reg.event.title,
-    category: reg.event.category,
-    location: reg.event.location,
-    issuedAt: reg.certificateIssuedAt!,
-    certificateCode: `CERT-${reg.id.slice(0, 8).toUpperCase()}`,
-    organizerName: reg.event.organizer?.name ?? "Organizer",
+  return registrations.map((registration) => ({
+    id: registration.id,
+    eventId: registration.event.id,
+    eventTitle: registration.event.title,
+    category: registration.event.category,
+    completedAt: registration.event.endsAt,
+    certificateCode: `CERT-${registration.event.id.slice(0, 8).toUpperCase()}`,
   }));
 }
 

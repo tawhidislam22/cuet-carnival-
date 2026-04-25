@@ -1,10 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { API_BASE_URL } from "@/lib/api";
 
 type AdminEventItem = {
@@ -23,61 +21,24 @@ type AdminEventsResponse = {
   events: AdminEventItem[];
 };
 
-const PAGE_SIZE = 10;
-
-function Paginator({ page, totalPages, total, filtered, onPage }: {
-  page: number; totalPages: number; total: number; filtered: number; onPage: (p: number) => void;
-}) {
-  const start = filtered === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
-  const end = Math.min(page * PAGE_SIZE, filtered);
-  return (
-    <div className="mt-5 flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
-      <p className="text-sm text-muted-foreground">
-        Showing <span className="font-medium">{start}–{end}</span> of{" "}
-        <span className="font-medium">{filtered}</span>
-        {filtered !== total ? ` (filtered from ${total} total)` : " events"}
-      </p>
-      {totalPages > 1 && (
-        <div className="flex items-center gap-1 flex-wrap">
-          <Button size="sm" variant="outline" disabled={page === 1} onClick={() => onPage(1)}>«</Button>
-          <Button size="sm" variant="outline" disabled={page === 1} onClick={() => onPage(page - 1)}>‹</Button>
-          {Array.from({ length: totalPages }, (_, i) => i + 1)
-            .filter((p) => p === 1 || p === totalPages || Math.abs(p - page) <= 1)
-            .reduce<(number | "…")[]>((acc, p, idx, arr) => {
-              if (idx > 0 && p - (arr[idx - 1] as number) > 1) acc.push("…");
-              acc.push(p);
-              return acc;
-            }, [])
-            .map((p, i) =>
-              p === "…" ? (
-                <span key={`el-${i}`} className="px-1.5 text-muted-foreground select-none">…</span>
-              ) : (
-                <Button key={p} size="sm" variant={p === page ? "default" : "outline"} onClick={() => onPage(p as number)}>
-                  {p}
-                </Button>
-              )
-            )}
-          <Button size="sm" variant="outline" disabled={page === totalPages} onClick={() => onPage(page + 1)}>›</Button>
-          <Button size="sm" variant="outline" disabled={page === totalPages} onClick={() => onPage(totalPages)}>»</Button>
-        </div>
-      )}
-    </div>
-  );
-}
+type RegistrationItem = {
+  id: string;
+  status: string;
+  registeredAt: string;
+  studentId: string | null;
+  department: string | null;
+  hall: string | null;
+  user: { id: string; name: string | null; email: string };
+};
 
 export default function AdminEventsPage() {
-  const router = useRouter();
   const [events, setEvents] = useState<AdminEventItem[]>([]);
   const [generatedAt, setGeneratedAt] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
-
-  // Filters
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [categoryFilter, setCategoryFilter] = useState("all");
-  const [page, setPage] = useState(1);
+  const [registrationsModal, setRegistrationsModal] = useState<{ eventId: string; eventName: string; list: RegistrationItem[] } | null>(null);
+  const [registrationsLoading, setRegistrationsLoading] = useState(false);
 
   const loadAdminEvents = useCallback(async (silent = false) => {
     if (!silent) {
@@ -164,35 +125,21 @@ export default function AdminEventsPage() {
     }
   };
 
-  const handleViewRegistrations = (event: AdminEventItem) => {
-    router.push(`/dashboard/admin/events/${event.id}/registrations`);
+  const handleViewRegistrations = async (event: AdminEventItem) => {
+    setRegistrationsLoading(true);
+    setRegistrationsModal({ eventId: event.id, eventName: event.name, list: [] });
+    try {
+      const res = await fetch(`${API_BASE_URL}/dashboard/admin/events/${event.id}/registrations`, {
+        credentials: "include",
+      });
+      if (res.ok) {
+        const payload = (await res.json()) as { data?: RegistrationItem[] };
+        setRegistrationsModal({ eventId: event.id, eventName: event.name, list: payload.data ?? [] });
+      }
+    } finally {
+      setRegistrationsLoading(false);
+    }
   };
-
-  // Reset page on filter change
-  useEffect(() => { setPage(1); }, [search, statusFilter, categoryFilter]);
-
-  const categories = useMemo(() => {
-    const cats = Array.from(new Set(events.map((e) => e.category).filter(Boolean)));
-    return cats.sort();
-  }, [events]);
-
-  const filtered = useMemo(() => {
-    const q = search.toLowerCase().trim();
-    return events.filter((e) => {
-      if (statusFilter !== "all" && e.status.toLowerCase() !== statusFilter) return false;
-      if (categoryFilter !== "all" && e.category !== categoryFilter) return false;
-      if (q && !(
-        e.name.toLowerCase().includes(q) ||
-        e.organizerName.toLowerCase().includes(q) ||
-        e.category.toLowerCase().includes(q)
-      )) return false;
-      return true;
-    });
-  }, [events, search, statusFilter, categoryFilter]);
-
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-  const hasActiveFilters = search || statusFilter !== "all" || categoryFilter !== "all";
 
   const lastSyncedLabel = generatedAt
     ? new Date(generatedAt).toLocaleString("en-US", {
@@ -212,70 +159,33 @@ export default function AdminEventsPage() {
   };
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Manage Events</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Create, update, and monitor all carnival events.</p>
-          {!isLoading && !error && lastSyncedLabel ? (
-            <p className="mt-1 text-xs text-muted-foreground">Last synced: {lastSyncedLabel}</p>
-          ) : null}
-        </div>
-        <Button variant="outline" size="sm" onClick={() => void loadAdminEvents()} disabled={isLoading}>
-          {isLoading ? "Loading..." : "Refresh"}
-        </Button>
-      </div>
-
-      {error && <p className="text-sm text-destructive">{error}</p>}
-
-      <Card>
-        <CardHeader className="pb-4">
-          <CardTitle className="text-base">Event List</CardTitle>
-          <CardDescription>All current and upcoming events.</CardDescription>
-
-          {/* Filters */}
-          <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center flex-wrap">
-            <Input
-              placeholder="Search event name, organizer, category..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="sm:max-w-xs"
-            />
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="h-9 rounded-md border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-            >
-              <option value="all">All Statuses</option>
-              <option value="published">Published</option>
-              <option value="draft">Draft</option>
-            </select>
-            <select
-              value={categoryFilter}
-              onChange={(e) => setCategoryFilter(e.target.value)}
-              className="h-9 rounded-md border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-            >
-              <option value="all">All Categories</option>
-              {categories.map((cat) => (
-                <option key={cat} value={cat}>{cat}</option>
-              ))}
-            </select>
-            {hasActiveFilters && (
-              <Button size="sm" variant="ghost" className="text-muted-foreground"
-                onClick={() => { setSearch(""); setStatusFilter("all"); setCategoryFilter("all"); }}>
-                Clear filters
-              </Button>
-            )}
+    <div className="min-h-screen bg-muted/30">
+      <div className="container mx-auto max-w-7xl px-4 py-8">
+        <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Manage Events</h1>
+            <p className="mt-1 text-muted-foreground">Create, update, and monitor all carnival events.</p>
+            {isLoading ? <p className="mt-2 text-sm text-muted-foreground">Loading events...</p> : null}
+            {error ? <p className="mt-2 text-sm text-destructive">{error}</p> : null}
+            {!isLoading && !error && lastSyncedLabel ? (
+              <p className="mt-2 text-xs text-muted-foreground">Live API sync: {lastSyncedLabel}</p>
+            ) : null}
           </div>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <p className="text-sm text-muted-foreground py-6 text-center">Loading events...</p>
-          ) : (
-            <>
-              <div className="space-y-3">
-                {paginated.map((event) => (
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => void loadAdminEvents()} disabled={isLoading}>
+              Refresh
+            </Button>
+          </div>
+        </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Event List</CardTitle>
+            <CardDescription>All current and upcoming events.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {events.map((event) => (
                 <div key={event.id} className="rounded-lg border p-4">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
@@ -304,7 +214,7 @@ export default function AdminEventsPage() {
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => handleViewRegistrations(event)}
+                      onClick={() => void handleViewRegistrations(event)}
                     >
                       Registrations ({event.attendees})
                     </Button>
@@ -319,24 +229,49 @@ export default function AdminEventsPage() {
                   </div>
                 </div>
               ))}
-                {filtered.length === 0 && (
-                  <div className="rounded-xl border border-dashed py-10 text-center text-sm text-muted-foreground">
-                    {hasActiveFilters ? "No events match your filters." : "No events found."}
-                  </div>
-                )}
-              </div>
+              {!isLoading && !error && events.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No events found.</p>
+              ) : null}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
-              <Paginator
-                page={page}
-                totalPages={totalPages}
-                total={events.length}
-                filtered={filtered.length}
-                onPage={setPage}
-              />
-            </>
-          )}
-        </CardContent>
-      </Card>
+      {/* Registrations Modal */}
+      {registrationsModal ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+          onClick={(e) => { if (e.target === e.currentTarget) setRegistrationsModal(null); }}
+        >
+          <div className="w-full max-w-2xl max-h-[80vh] overflow-y-auto rounded-xl border bg-background shadow-2xl">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-bold">Registrations: {registrationsModal.eventName}</h2>
+                <Button size="sm" variant="outline" onClick={() => setRegistrationsModal(null)}>Close</Button>
+              </div>
+              {registrationsLoading ? (
+                <p className="text-sm text-muted-foreground">Loading...</p>
+              ) : registrationsModal.list.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No registrations yet.</p>
+              ) : (
+                <div className="space-y-2">
+                  {registrationsModal.list.map((reg) => (
+                    <div key={reg.id} className="rounded-lg border p-3 text-sm">
+                      <p className="font-medium">{reg.user.name || "Unnamed"} — <span className="text-muted-foreground">{reg.user.email}</span></p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        ID: {reg.studentId ?? "N/A"} | Dept: {reg.department ?? "N/A"} | Hall: {reg.hall ?? "N/A"}
+                      </p>
+                      <p className="text-xs text-muted-foreground">Registered: {new Date(reg.registeredAt).toLocaleString()}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
+
+
