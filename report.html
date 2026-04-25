@@ -1,0 +1,1162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CUET Carnival – Backend Report</title>
+  <style>
+    /* ── Reset & Base ──────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: "Times New Roman", Times, serif;
+      font-size: 12pt;
+      line-height: 1.7;
+      color: #1a1a1a;
+      background: #f5f5f5;
+    }
+
+    /* ── Page / Paper ──────────────────────────────────────────── */
+    .page {
+      width: 210mm;
+      min-height: 297mm;
+      margin: 0 auto 20px;
+      background: #fff;
+      padding: 22mm 25mm 22mm 30mm;
+      box-shadow: 0 2px 12px rgba(0,0,0,.15);
+      position: relative;
+    }
+
+    @media print {
+      body { background: #fff; }
+      .page { margin: 0; box-shadow: none; page-break-after: always; }
+      .no-print { display: none; }
+    }
+
+    /* ── Cover Page ────────────────────────────────────────────── */
+    .cover {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 253mm;
+      text-align: center;
+      gap: 0;
+    }
+
+    .cover-logo {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #003d8f 0%, #0062cc 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 14px;
+    }
+    .cover-logo svg { width: 42px; height: 42px; fill: #fff; }
+
+    .cover .institution-top {
+      font-size: 10.5pt;
+      color: #444;
+      margin-bottom: 4px;
+    }
+
+    .cover .course-badge {
+      display: inline-block;
+      background: #003d8f;
+      color: #fff;
+      font-size: 10pt;
+      font-weight: bold;
+      letter-spacing: .5px;
+      padding: 4px 18px;
+      border-radius: 3px;
+      margin: 12px 0 20px;
+    }
+
+    .cover h1 {
+      font-size: 17pt;
+      font-weight: bold;
+      color: #003d8f;
+      line-height: 1.3;
+      margin-bottom: 6px;
+      border-bottom: 2px solid #003d8f;
+      padding-bottom: 10px;
+      width: 100%;
+    }
+
+    .cover .subtitle {
+      font-size: 13pt;
+      color: #222;
+      margin-bottom: 20px;
+    }
+
+    .cover .group-badge {
+      font-size: 11pt;
+      font-weight: bold;
+      color: #003d8f;
+      margin-bottom: 20px;
+    }
+
+    .cover table.members {
+      border-collapse: collapse;
+      margin: 0 auto 24px;
+      min-width: 300px;
+    }
+    .cover table.members th {
+      background: #003d8f;
+      color: #fff;
+      padding: 6px 18px;
+      font-size: 10.5pt;
+      border: 1px solid #003d8f;
+    }
+    .cover table.members td {
+      padding: 5px 18px;
+      font-size: 10.5pt;
+      border: 1px solid #bbb;
+      text-align: center;
+    }
+    .cover table.members tr:nth-child(even) td { background: #f0f4ff; }
+
+    .cover .submitted-to {
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      padding: 12px 24px;
+      font-size: 10.5pt;
+      text-align: center;
+      color: #333;
+      margin-bottom: 28px;
+    }
+    .cover .submitted-to strong { color: #003d8f; }
+
+    .cover .institution-footer {
+      border-top: 2px solid #003d8f;
+      padding-top: 12px;
+      font-size: 10pt;
+      color: #333;
+      line-height: 1.6;
+    }
+    .cover .institution-footer strong { color: #003d8f; }
+
+    /* ── Table of Contents ─────────────────────────────────────── */
+    .toc h2 {
+      text-align: center;
+      font-size: 14pt;
+      color: #003d8f;
+      margin-bottom: 20px;
+      border-bottom: 1.5px solid #003d8f;
+      padding-bottom: 6px;
+    }
+
+    .toc ul { list-style: none; padding: 0; }
+    .toc ul li {
+      display: flex;
+      align-items: baseline;
+      font-size: 11pt;
+      padding: 3px 0;
+    }
+    .toc ul li .dots {
+      flex: 1;
+      border-bottom: 1px dotted #999;
+      margin: 0 6px;
+    }
+    .toc ul li .page-num { color: #003d8f; font-weight: bold; min-width: 24px; text-align: right; }
+    .toc ul li.sub { padding-left: 20px; font-size: 10.5pt; }
+    .toc ul li .section-num { min-width: 36px; color: #555; }
+
+    /* ── Body Pages ────────────────────────────────────────────── */
+    h2.section-title {
+      font-size: 13.5pt;
+      color: #003d8f;
+      border-bottom: 1.5px solid #003d8f;
+      padding-bottom: 4px;
+      margin: 22px 0 10px;
+    }
+
+    h3.subsection-title {
+      font-size: 11.5pt;
+      color: #1a3a6e;
+      margin: 14px 0 6px;
+    }
+
+    p { margin-bottom: 8px; text-align: justify; }
+
+    ul.body-list { padding-left: 22px; margin-bottom: 10px; }
+    ul.body-list li { margin-bottom: 4px; font-size: 11pt; }
+
+    /* ── Tables ────────────────────────────────────────────────── */
+    table.report-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 9.5pt;
+      margin: 10px 0 16px;
+    }
+    table.report-table th {
+      background: #003d8f;
+      color: #fff;
+      padding: 6px 8px;
+      border: 1px solid #003d8f;
+      text-align: left;
+    }
+    table.report-table td {
+      padding: 5px 8px;
+      border: 1px solid #ccc;
+      vertical-align: top;
+    }
+    table.report-table tr:nth-child(even) td { background: #f0f4ff; }
+
+    /* Method badges */
+    .badge {
+      display: inline-block;
+      padding: 1px 7px;
+      border-radius: 3px;
+      font-size: 8.5pt;
+      font-weight: bold;
+      letter-spacing: .3px;
+      color: #fff;
+    }
+    .badge-GET    { background: #28a745; }
+    .badge-POST   { background: #007bff; }
+    .badge-PATCH  { background: #fd7e14; }
+    .badge-DELETE { background: #dc3545; }
+    .badge-ALL    { background: #6f42c1; }
+
+    .auth-chip {
+      display: inline-block;
+      padding: 1px 7px;
+      border-radius: 10px;
+      font-size: 8pt;
+      font-weight: bold;
+    }
+    .auth-yes   { background: #fff3cd; color: #856404; border: 1px solid #ffc107; }
+    .auth-admin { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+    .auth-no    { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+
+    /* ── Code Blocks ───────────────────────────────────────────── */
+    pre {
+      background: #1e1e2e;
+      color: #cdd6f4;
+      border-radius: 5px;
+      padding: 12px 16px;
+      font-family: "Courier New", Courier, monospace;
+      font-size: 8.5pt;
+      overflow-x: auto;
+      margin: 8px 0 14px;
+      line-height: 1.5;
+    }
+    .json-key    { color: #89dceb; }
+    .json-string { color: #a6e3a1; }
+    .json-number { color: #fab387; }
+    .json-bool   { color: #f38ba8; }
+
+    /* ── ER / Architecture Diagram ─────────────────────────────── */
+    .diagram-box {
+      border: 1.5px solid #ccc;
+      border-radius: 6px;
+      padding: 18px;
+      margin: 12px 0;
+      background: #fafbff;
+    }
+    .diagram-caption {
+      text-align: center;
+      font-size: 9.5pt;
+      color: #555;
+      margin-top: 6px;
+      font-style: italic;
+    }
+
+    /* Architecture SVG diagram */
+    .arch-diagram {
+      width: 100%;
+      max-width: 480px;
+      display: block;
+      margin: 0 auto;
+    }
+
+    /* ── Page Numbers ──────────────────────────────────────────── */
+    .page-num-footer {
+      position: absolute;
+      bottom: 14mm;
+      width: calc(100% - 55mm);
+      text-align: center;
+      font-size: 9pt;
+      color: #777;
+    }
+
+    /* ── Print button ──────────────────────────────────────────── */
+    .print-btn {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #003d8f;
+      color: #fff;
+      border: none;
+      padding: 10px 22px;
+      border-radius: 6px;
+      font-size: 11pt;
+      cursor: pointer;
+      z-index: 999;
+      box-shadow: 0 2px 8px rgba(0,0,0,.25);
+    }
+    .print-btn:hover { background: #0056cc; }
+
+    /* ── Misc helpers ──────────────────────────────────────────── */
+    .indent { padding-left: 20px; }
+    .mt-small { margin-top: 6px; }
+    .tag { 
+      display: inline-block; 
+      background: #e8edf8; 
+      color: #003d8f; 
+      border-radius: 3px; 
+      padding: 1px 7px; 
+      font-size: 9pt; 
+      font-weight: bold; 
+      margin: 2px 0; 
+    }
+  </style>
+</head>
+<body>
+
+<button class="print-btn no-print" onclick="window.print()">Print / Save PDF</button>
+
+<!-- ════════════════════════════════════════════════════
+     PAGE 1 — COVER
+════════════════════════════════════════════════════ -->
+<div class="page">
+  <div class="cover">
+    <div class="cover-logo">
+      <!-- Simple mortarboard icon -->
+      <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+        <polygon points="32,6 62,22 32,38 2,22" />
+        <path d="M16,28v16c0,6 8,10 16,10s16-4 16-10V28L32,38Z" opacity=".85"/>
+        <rect x="58" y="22" width="4" height="18" rx="2"/>
+        <circle cx="60" cy="42" r="4"/>
+      </svg>
+    </div>
+
+    <div class="institution-top">
+      Internet Programming (Sessional) [CSE-326]
+    </div>
+
+    <div class="course-badge">Backend Report</div>
+
+    <h1>CUET Carnival: Campus Event<br/>Management System</h1>
+
+    <div class="subtitle" style="margin-top:12px;">
+      A full-stack event management platform for<br/>Chittagong University of Engineering &amp; Technology
+    </div>
+
+    <div class="group-badge">Group No: 6</div>
+
+    <table class="members">
+      <thead>
+        <tr><th>Name</th><th>Student ID</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Sajjad Hossain</td><td>2204075</td></tr>
+        <tr><td>Tahmid Hossain</td><td>2204089</td></tr>
+        <tr><td>Fardin Hasan</td><td>2204081</td></tr>
+      </tbody>
+    </table>
+
+    <div class="submitted-to">
+      <strong>Submitted to:</strong><br/>
+      Abir Hassan<br/>
+      Lecturer,<br/>
+      Department of CSE, CUET
+    </div>
+
+    <div class="institution-footer">
+      <strong>Department of Computer Science and Engineering (CSE)</strong><br/>
+      Chittagong University of Engineering &amp; Technology (CUET)<br/>
+      Chattogram-4349, Bangladesh
+    </div>
+  </div>
+  <div class="page-num-footer">1</div>
+</div>
+
+<!-- ════════════════════════════════════════════════════
+     PAGE 2 — TABLE OF CONTENTS
+════════════════════════════════════════════════════ -->
+<div class="page">
+  <div class="toc">
+    <h2>Contents</h2>
+    <ul>
+      <li><span class="section-num">1</span> Project Overview <span class="dots"></span><span class="page-num">3</span></li>
+      <li class="sub"><span class="section-num">1.1</span> Project Title <span class="dots"></span><span class="page-num">3</span></li>
+      <li class="sub"><span class="section-num">1.2</span> Problem Statement <span class="dots"></span><span class="page-num">3</span></li>
+      <li class="sub"><span class="section-num">1.3</span> Objectives <span class="dots"></span><span class="page-num">3</span></li>
+      <li class="sub"><span class="section-num">1.4</span> Target Users <span class="dots"></span><span class="page-num">3</span></li>
+      <li><span class="section-num">2</span> System Architecture <span class="dots"></span><span class="page-num">3</span></li>
+      <li class="sub"><span class="section-num">2.1</span> Architecture Overview <span class="dots"></span><span class="page-num">3</span></li>
+      <li class="sub"><span class="section-num">2.2</span> Architecture Diagram <span class="dots"></span><span class="page-num">4</span></li>
+      <li class="sub"><span class="section-num">2.3</span> Technology Stack <span class="dots"></span><span class="page-num">4</span></li>
+      <li><span class="section-num">3</span> Backend Design <span class="dots"></span><span class="page-num">5</span></li>
+      <li class="sub"><span class="section-num">3.1</span> Module Breakdown <span class="dots"></span><span class="page-num">5</span></li>
+      <li class="sub"><span class="section-num">3.2</span> Workflow Description <span class="dots"></span><span class="page-num">5</span></li>
+      <li><span class="section-num">4</span> Database Design <span class="dots"></span><span class="page-num">6</span></li>
+      <li class="sub"><span class="section-num">4.1</span> Database Type <span class="dots"></span><span class="page-num">6</span></li>
+      <li class="sub"><span class="section-num">4.2</span> ER Diagram <span class="dots"></span><span class="page-num">6</span></li>
+      <li class="sub"><span class="section-num">4.3</span> Table / Collection Schema <span class="dots"></span><span class="page-num">6</span></li>
+      <li><span class="section-num">5</span> API Design <span class="dots"></span><span class="page-num">7</span></li>
+      <li class="sub"><span class="section-num">5.1</span> API Overview <span class="dots"></span><span class="page-num">7</span></li>
+      <li class="sub"><span class="section-num">5.2</span> Endpoint List <span class="dots"></span><span class="page-num">7</span></li>
+      <li class="sub"><span class="section-num">5.3</span> Sample Request / Response <span class="dots"></span><span class="page-num">9</span></li>
+      <li><span class="section-num">6</span> Authentication and Security <span class="dots"></span><span class="page-num">9</span></li>
+      <li class="sub"><span class="section-num">6.1</span> Authentication Method <span class="dots"></span><span class="page-num">9</span></li>
+      <li class="sub"><span class="section-num">6.2</span> Security Measures <span class="dots"></span><span class="page-num">9</span></li>
+      <li><span class="section-num">7</span> Error Handling <span class="dots"></span><span class="page-num">10</span></li>
+      <li><span class="section-num">8</span> Testing <span class="dots"></span><span class="page-num">10</span></li>
+      <li class="sub"><span class="section-num">8.1</span> Testing Strategy <span class="dots"></span><span class="page-num">10</span></li>
+      <li class="sub"><span class="section-num">8.2</span> Test Cases <span class="dots"></span><span class="page-num">10</span></li>
+      <li><span class="section-num">9</span> Limitations and Future Work <span class="dots"></span><span class="page-num">11</span></li>
+      <li class="sub"><span class="section-num">9.1</span> Limitations <span class="dots"></span><span class="page-num">11</span></li>
+      <li class="sub"><span class="section-num">9.2</span> Future Improvements <span class="dots"></span><span class="page-num">11</span></li>
+      <li><span class="section-num">10</span> Conclusion <span class="dots"></span><span class="page-num">11</span></li>
+    </ul>
+  </div>
+  <div class="page-num-footer">2</div>
+</div>
+
+<!-- ════════════════════════════════════════════════════
+     PAGE 3 — PROJECT OVERVIEW + SYSTEM ARCHITECTURE
+════════════════════════════════════════════════════ -->
+<div class="page">
+
+  <h2 class="section-title">1 &nbsp; Project Overview</h2>
+
+  <h3 class="subsection-title">1.1 &nbsp; Project Title</h3>
+  <p>CUET Carnival: Campus Event Management System</p>
+
+  <h3 class="subsection-title">1.2 &nbsp; Problem Statement</h3>
+  <p>
+    CUET regularly hosts academic, technical, social, and cultural events involving hundreds of students.
+    Historically, event registration has been handled through social media posts, paper forms, and informal
+    messaging groups — leading to missed deadlines, duplicate registrations, lost records, and
+    no centralized visibility for organisers or students. CUET Carnival addresses this by providing a
+    unified, role-aware web platform where students can discover and register for events, organizers
+    can publish and manage them, and administrators can oversee the entire ecosystem through a
+    dedicated dashboard.
+  </p>
+
+  <h3 class="subsection-title">1.3 &nbsp; Objectives</h3>
+  <ul class="body-list">
+    <li>Build a CUET-specific, centralized event discovery and registration platform.</li>
+    <li>Provide role-based workflows for students, organizers, and administrators.</li>
+    <li>Implement secure, institution-restricted authentication using CUET student email addresses.</li>
+    <li>Enable digital certificate issuance and revocation for event participants.</li>
+    <li>Design a modular, extensible REST backend that can be deployed on Vercel (serverless).</li>
+  </ul>
+
+  <h3 class="subsection-title">1.4 &nbsp; Target Users</h3>
+  <ul class="body-list">
+    <li><strong>CUET Students:</strong> Discover published events and register with a single click.</li>
+    <li><strong>Organizers:</strong> Create events, upload banners, manage registrations, and issue certificates.</li>
+    <li><strong>Administrators:</strong> Full platform control — publish/unpublish events, manage users, view reports, configure settings.</li>
+  </ul>
+
+  <!-- ── Section 2 ── -->
+  <h2 class="section-title">2 &nbsp; System Architecture</h2>
+
+  <h3 class="subsection-title">2.1 &nbsp; Architecture Overview</h3>
+  <p>
+    CUET Carnival follows a <strong>3-tier client-server architecture</strong> with a strict separation of concerns:
+  </p>
+  <ul class="body-list">
+    <li><strong>Presentation Layer:</strong> Next.js 16 (App Router) frontend consumed by all user roles.</li>
+    <li><strong>Application Layer:</strong> Node.js + Express REST API enforcing business rules, validation, and authorization.</li>
+    <li><strong>Data Layer:</strong> Neon Postgres (serverless PostgreSQL) accessed via Prisma ORM.</li>
+  </ul>
+  <p>
+    Session management is delegated to <strong>Better Auth</strong>, which issues HTTP-only session cookies.
+    Static event banner images are stored in a <code>/uploads</code> directory served as static files locally
+    and in <code>/tmp/uploads</code> on Vercel.
+  </p>
+
+  <div class="page-num-footer">3</div>
+</div>
+
+<!-- ════════════════════════════════════════════════════
+     PAGE 4 — ARCHITECTURE DIAGRAM + TECH STACK
+════════════════════════════════════════════════════ -->
+<div class="page">
+
+  <h3 class="subsection-title">2.2 &nbsp; Architecture Diagram</h3>
+
+  <div class="diagram-box">
+    <svg class="arch-diagram" viewBox="0 0 480 260" xmlns="http://www.w3.org/2000/svg" font-family="Arial,sans-serif" font-size="11">
+
+      <!-- Browser -->
+      <rect x="10" y="10" width="120" height="60" rx="6" fill="#dbe9ff" stroke="#003d8f" stroke-width="1.5"/>
+      <text x="70" y="36" text-anchor="middle" font-weight="bold" fill="#003d8f">Browser</text>
+      <text x="70" y="52" text-anchor="middle" fill="#333">(Next.js 16)</text>
+      <text x="70" y="65" text-anchor="middle" font-size="9" fill="#555">React / Tailwind</text>
+
+      <!-- Arrow right -->
+      <line x1="130" y1="40" x2="180" y2="40" stroke="#003d8f" stroke-width="1.5" marker-end="url(#arrow)"/>
+      <text x="155" y="35" text-anchor="middle" font-size="9" fill="#555">HTTPS</text>
+      <text x="155" y="52" text-anchor="middle" font-size="9" fill="#555">Cookie</text>
+
+      <!-- Express API -->
+      <rect x="180" y="10" width="130" height="60" rx="6" fill="#fff3cd" stroke="#e6a817" stroke-width="1.5"/>
+      <text x="245" y="33" text-anchor="middle" font-weight="bold" fill="#7a4f00">Express API</text>
+      <text x="245" y="48" text-anchor="middle" fill="#555">Node.js + Better Auth</text>
+      <text x="245" y="63" text-anchor="middle" font-size="9" fill="#777">REST / JSON</text>
+
+      <!-- Arrow right -->
+      <line x1="310" y1="40" x2="355" y2="40" stroke="#003d8f" stroke-width="1.5" marker-end="url(#arrow)"/>
+      <text x="332" y="35" text-anchor="middle" font-size="9" fill="#555">Prisma</text>
+      <text x="332" y="52" text-anchor="middle" font-size="9" fill="#555">ORM</text>
+
+      <!-- Neon DB -->
+      <rect x="355" y="10" width="110" height="60" rx="6" fill="#d4edda" stroke="#28a745" stroke-width="1.5"/>
+      <text x="410" y="33" text-anchor="middle" font-weight="bold" fill="#155724">Neon Postgres</text>
+      <text x="410" y="48" text-anchor="middle" fill="#333">(PostgreSQL)</text>
+      <text x="410" y="63" text-anchor="middle" font-size="9" fill="#555">Serverless</text>
+
+      <!-- Modules row -->
+      <text x="240" y="108" text-anchor="middle" font-weight="bold" fill="#003d8f" font-size="10">Express Modules</text>
+      <rect x="10"  y="115" width="80" height="36" rx="4" fill="#e8edf8" stroke="#aab"/>
+      <text x="50"  y="133" text-anchor="middle" font-size="9.5" fill="#003d8f">auth</text>
+      <text x="50"  y="145" text-anchor="middle" font-size="8.5" fill="#555">Better Auth</text>
+
+      <rect x="100" y="115" width="80" height="36" rx="4" fill="#e8edf8" stroke="#aab"/>
+      <text x="140" y="133" text-anchor="middle" font-size="9.5" fill="#003d8f">users</text>
+      <text x="140" y="145" text-anchor="middle" font-size="8.5" fill="#555">profile / onboard</text>
+
+      <rect x="190" y="115" width="80" height="36" rx="4" fill="#e8edf8" stroke="#aab"/>
+      <text x="230" y="133" text-anchor="middle" font-size="9.5" fill="#003d8f">events</text>
+      <text x="230" y="145" text-anchor="middle" font-size="8.5" fill="#555">CRUD / register</text>
+
+      <rect x="280" y="115" width="80" height="36" rx="4" fill="#e8edf8" stroke="#aab"/>
+      <text x="320" y="133" text-anchor="middle" font-size="9.5" fill="#003d8f">dashboard</text>
+      <text x="320" y="145" text-anchor="middle" font-size="8.5" fill="#555">user + admin</text>
+
+      <rect x="370" y="115" width="80" height="36" rx="4" fill="#e8edf8" stroke="#aab"/>
+      <text x="410" y="133" text-anchor="middle" font-size="9.5" fill="#003d8f">admin</text>
+      <text x="410" y="145" text-anchor="middle" font-size="8.5" fill="#555">faculties / venues</text>
+
+      <!-- connector lines -->
+      <line x1="245" y1="70" x2="245" y2="115" stroke="#ccc" stroke-width="1" stroke-dasharray="4"/>
+
+      <!-- Prisma models row -->
+      <text x="240" y="180" text-anchor="middle" font-weight="bold" fill="#155724" font-size="10">Prisma Models</text>
+      <rect x="10"  y="188" width="72" height="30" rx="4" fill="#d4edda" stroke="#28a745"/>
+      <text x="46"  y="207" text-anchor="middle" font-size="9.5" fill="#155724">User</text>
+
+      <rect x="90"  y="188" width="72" height="30" rx="4" fill="#d4edda" stroke="#28a745"/>
+      <text x="126" y="207" text-anchor="middle" font-size="9.5" fill="#155724">Session</text>
+
+      <rect x="170" y="188" width="72" height="30" rx="4" fill="#d4edda" stroke="#28a745"/>
+      <text x="206" y="207" text-anchor="middle" font-size="9.5" fill="#155724">Event</text>
+
+      <rect x="250" y="188" width="100" height="30" rx="4" fill="#d4edda" stroke="#28a745"/>
+      <text x="300" y="207" text-anchor="middle" font-size="9.5" fill="#155724">EventRegistration</text>
+
+      <rect x="358" y="188" width="100" height="30" rx="4" fill="#d4edda" stroke="#28a745"/>
+      <text x="408" y="207" text-anchor="middle" font-size="9.5" fill="#155724">Verification</text>
+
+      <line x1="245" y1="151" x2="245" y2="188" stroke="#ccc" stroke-width="1" stroke-dasharray="4"/>
+
+      <!-- Arrow marker -->
+      <defs>
+        <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 Z" fill="#003d8f"/>
+        </marker>
+      </defs>
+    </svg>
+    <p class="diagram-caption">Figure 1: CUET Carnival 3-Tier System Architecture</p>
+  </div>
+
+  <h3 class="subsection-title">2.3 &nbsp; Technology Stack</h3>
+
+  <table class="report-table">
+    <thead>
+      <tr><th>Component</th><th>Technology Used</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Frontend Language</td><td>TypeScript, React 19, Next.js 16 (App Router)</td></tr>
+      <tr><td>Frontend Styling</td><td>Tailwind CSS v4, shadcn/ui components</td></tr>
+      <tr><td>Backend Runtime</td><td>Node.js (ESM)</td></tr>
+      <tr><td>Backend Framework</td><td>Express.js v5</td></tr>
+      <tr><td>Authentication</td><td>Better Auth (session cookies + email/password)</td></tr>
+      <tr><td>ORM</td><td>Prisma 7</td></tr>
+      <tr><td>Database</td><td>Neon Postgres (serverless PostgreSQL)</td></tr>
+      <tr><td>API Type</td><td>REST API (JSON)</td></tr>
+      <tr><td>Image Upload</td><td>Multer (local / /tmp on Vercel)</td></tr>
+      <tr><td>Email</td><td>Nodemailer + Gmail SMTP (App Password)</td></tr>
+      <tr><td>Deployment</td><td>Vercel (frontend + serverless backend)</td></tr>
+      <tr><td>Package Manager</td><td>pnpm</td></tr>
+    </tbody>
+  </table>
+
+  <div class="page-num-footer">4</div>
+</div>
+
+<!-- ════════════════════════════════════════════════════
+     PAGE 5 — BACKEND DESIGN
+════════════════════════════════════════════════════ -->
+<div class="page">
+
+  <h2 class="section-title">3 &nbsp; Backend Design</h2>
+
+  <h3 class="subsection-title">3.1 &nbsp; Module Breakdown</h3>
+  <p>The backend follows a <strong>feature-based modular pattern</strong> inside <code>src/modules/</code>. Each module owns its route, controller, service, and schema files:</p>
+
+  <ul class="body-list">
+    <li>
+      <strong>auth</strong> — Delegates entirely to Better Auth. Handles sign-up (CUET email enforced),
+      sign-in, sign-out, email verification, and password reset. Sessions are issued as HTTP-only cookies.
+    </li>
+    <li>
+      <strong>users</strong> — Exposes the authenticated user's profile (<code>GET /me</code>),
+      organizer onboarding (<code>PATCH /me/onboarding</code>), and a list of organizers for the event
+      creation form.
+    </li>
+    <li>
+      <strong>events</strong> — Full lifecycle: create, read, update, delete, image upload, registration,
+      certificate issue/revoke. Owner-only writes enforced at service level.
+    </li>
+    <li>
+      <strong>dashboard</strong> — Aggregated views for users (overview, my-events, schedule, certificates)
+      and admin-only endpoints (platform stats, user/event management, reports, settings).
+    </li>
+    <li>
+      <strong>admin</strong> — Reference data management (faculties, categories, venues) used to populate
+      dropdowns in the create-event form. Admin-protected writes; public reads.
+    </li>
+  </ul>
+
+  <p>
+    A shared <code>requireAuth</code> middleware extracts the session from the cookie, validates it
+    against the database via Better Auth, and attaches <code>req.authUserId</code> and
+    <code>req.authUserRole</code> to every authenticated request.
+  </p>
+
+  <h3 class="subsection-title">3.2 &nbsp; Workflow Description</h3>
+  <ol style="padding-left:22px; font-size:11pt;">
+    <li style="margin-bottom:4px;">A CUET student signs up using their <code>@student.cuet.ac.bd</code> email; a verification link is sent via Gmail SMTP.</li>
+    <li style="margin-bottom:4px;">After email verification, the student logs in and receives an HTTP-only session cookie.</li>
+    <li style="margin-bottom:4px;">The student browses published events on the home page and clicks <em>Register</em>.</li>
+    <li style="margin-bottom:4px;">The backend validates the session, checks capacity, and prevents duplicate registrations before creating an <code>EventRegistration</code> record.</li>
+    <li style="margin-bottom:4px;">An organizer creates an event via the dashboard form; the event is saved as <code>isPublished: false</code> until an admin publishes it.</li>
+    <li style="margin-bottom:4px;">An admin reviews events, toggles publish status, and can manage registrations or issue participation certificates.</li>
+    <li style="margin-bottom:4px;">The student can view their registered events, upcoming schedule, and earned certificates from the personal dashboard.</li>
+  </ol>
+
+  <div class="page-num-footer">5</div>
+</div>
+
+<!-- ════════════════════════════════════════════════════
+     PAGE 6 — DATABASE DESIGN
+════════════════════════════════════════════════════ -->
+<div class="page">
+
+  <h2 class="section-title">4 &nbsp; Database Design</h2>
+
+  <h3 class="subsection-title">4.1 &nbsp; Database Type</h3>
+  <p>
+    The project uses <strong>PostgreSQL</strong> hosted on <strong>Neon</strong> (serverless). Prisma ORM
+    provides type-safe query building and handles migrations. The serverless nature of Neon means the
+    database may experience cold-start latency, handled gracefully by the backend with a <code>503</code>
+    response on Prisma connection errors (P1001 / P1002).
+  </p>
+
+  <h3 class="subsection-title">4.2 &nbsp; ER Diagram</h3>
+
+  <div class="diagram-box">
+    <svg viewBox="0 0 480 220" xmlns="http://www.w3.org/2000/svg" font-family="Arial,sans-serif" font-size="10" style="width:100%;max-width:480px;display:block;margin:0 auto;">
+
+      <!-- User -->
+      <rect x="10" y="10" width="130" height="190" rx="5" fill="#dbe9ff" stroke="#003d8f" stroke-width="1.5"/>
+      <rect x="10" y="10" width="130" height="22" rx="5" fill="#003d8f"/>
+      <text x="75" y="25" text-anchor="middle" fill="#fff" font-weight="bold">User</text>
+      <text x="18" y="50"  fill="#333">id (PK, cuid)</text>
+      <text x="18" y="64"  fill="#333">name</text>
+      <text x="18" y="78"  fill="#333">email (unique)</text>
+      <text x="18" y="92"  fill="#333">studentId</text>
+      <text x="18" y="106" fill="#333">department</text>
+      <text x="18" y="120" fill="#333">hall</text>
+      <text x="18" y="134" fill="#333">role</text>
+      <text x="18" y="148" fill="#333">emailVerified</text>
+      <text x="18" y="162" fill="#333">onboardingCompleted</text>
+      <text x="18" y="176" fill="#333">organizerBio</text>
+      <text x="18" y="190" fill="#333">organizerClubName</text>
+
+      <!-- Event -->
+      <rect x="175" y="10" width="135" height="175" rx="5" fill="#fff3cd" stroke="#e6a817" stroke-width="1.5"/>
+      <rect x="175" y="10" width="135" height="22" rx="5" fill="#e6a817"/>
+      <text x="242" y="25" text-anchor="middle" fill="#fff" font-weight="bold">Event</text>
+      <text x="183" y="50"  fill="#333">id (PK, cuid)</text>
+      <text x="183" y="64"  fill="#333">title</text>
+      <text x="183" y="78"  fill="#333">description</text>
+      <text x="183" y="92"  fill="#333">category</text>
+      <text x="183" y="106" fill="#333">status</text>
+      <text x="183" y="120" fill="#333">location</text>
+      <text x="183" y="134" fill="#333">startsAt / endsAt</text>
+      <text x="183" y="148" fill="#333">capacity</text>
+      <text x="183" y="162" fill="#333">isPublished</text>
+      <text x="183" y="176" fill="#333" font-style="italic">organizerId (FK→User)</text>
+
+      <!-- EventRegistration -->
+      <rect x="345" y="10" width="125" height="148" rx="5" fill="#d4edda" stroke="#28a745" stroke-width="1.5"/>
+      <rect x="345" y="10" width="125" height="22" rx="5" fill="#28a745"/>
+      <text x="407" y="25" text-anchor="middle" fill="#fff" font-weight="bold">EventRegistration</text>
+      <text x="353" y="50"  fill="#333">id (PK, cuid)</text>
+      <text x="353" y="64"  fill="#333">status</text>
+      <text x="353" y="78"  fill="#333">registeredAt</text>
+      <text x="353" y="92"  fill="#333">studentId</text>
+      <text x="353" y="106" fill="#333">department</text>
+      <text x="353" y="120" fill="#333">hall</text>
+      <text x="353" y="134" fill="#555" font-style="italic">userId (FK→User)</text>
+      <text x="353" y="148" fill="#555" font-style="italic">eventId (FK→Event)</text>
+
+      <!-- Session box (small) -->
+      <rect x="10" y="208" width="80" height="10" rx="3" fill="#e8edf8" stroke="#aab"/>
+      <text x="15" y="216" fill="#555" font-size="8">Session (Better Auth managed)</text>
+      <rect x="98" y="208" width="80" height="10" rx="3" fill="#e8edf8" stroke="#aab"/>
+      <text x="103" y="216" fill="#555" font-size="8">Account (Better Auth managed)</text>
+      <rect x="186" y="208" width="80" height="10" rx="3" fill="#e8edf8" stroke="#aab"/>
+      <text x="191" y="216" fill="#555" font-size="8">Verification (Better Auth)</text>
+
+      <!-- Relations -->
+      <!-- User → Event (1:N) -->
+      <line x1="140" y1="100" x2="175" y2="100" stroke="#e6a817" stroke-width="1.5"/>
+      <text x="155" y="97" text-anchor="middle" font-size="9" fill="#888">1:N</text>
+
+      <!-- Event → Registration (1:N) -->
+      <line x1="310" y1="90" x2="345" y2="90" stroke="#28a745" stroke-width="1.5"/>
+      <text x="328" y="86" text-anchor="middle" font-size="9" fill="#888">1:N</text>
+
+      <!-- User → Registration (1:N) -->
+      <line x1="140" y1="80" x2="345" y2="80" stroke="#888" stroke-width="1" stroke-dasharray="4"/>
+      <text x="242" y="76" text-anchor="middle" font-size="9" fill="#888">1:N</text>
+    </svg>
+    <p class="diagram-caption">Figure 2: Entity Relationship Diagram — CUET Carnival (PostgreSQL)</p>
+  </div>
+
+  <h3 class="subsection-title">4.3 &nbsp; Table / Collection Schema</h3>
+
+  <table class="report-table">
+    <thead>
+      <tr><th>Table</th><th>Column</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+      <tr><td rowspan="10"><strong>User</strong></td><td>id</td><td>Unique identifier (cuid)</td></tr>
+      <tr><td>name</td><td>Full name</td></tr>
+      <tr><td>email</td><td>CUET institutional email (unique)</td></tr>
+      <tr><td>studentId</td><td>CUET student ID (optional, from onboarding)</td></tr>
+      <tr><td>department</td><td>Academic department (CSE, EEE, …)</td></tr>
+      <tr><td>hall</td><td>Residential hall</td></tr>
+      <tr><td>role</td><td>user | organizer | admin</td></tr>
+      <tr><td>emailVerified</td><td>Whether CUET email was confirmed</td></tr>
+      <tr><td>onboardingCompleted</td><td>Whether organizer profile is complete</td></tr>
+      <tr><td>organizerClubName</td><td>Club / organisation name (organizers only)</td></tr>
+      <tr><td rowspan="8"><strong>Event</strong></td><td>id</td><td>Unique identifier (cuid)</td></tr>
+      <tr><td>title</td><td>Event name</td></tr>
+      <tr><td>description</td><td>Detailed description</td></tr>
+      <tr><td>category</td><td>Technical | Cultural | Sports | …</td></tr>
+      <tr><td>location</td><td>Venue inside/outside CUET</td></tr>
+      <tr><td>startsAt / endsAt</td><td>Event start and end timestamps</td></tr>
+      <tr><td>capacity</td><td>Maximum number of participants</td></tr>
+      <tr><td>isPublished</td><td>Whether the event is visible to students</td></tr>
+      <tr><td rowspan="5"><strong>Event&shy;Registration</strong></td><td>id</td><td>Unique identifier (cuid)</td></tr>
+      <tr><td>userId</td><td>FK → User</td></tr>
+      <tr><td>eventId</td><td>FK → Event</td></tr>
+      <tr><td>status</td><td>Confirmed (future: certificate issued)</td></tr>
+      <tr><td>registeredAt</td><td>Timestamp of registration</td></tr>
+    </tbody>
+  </table>
+
+  <div class="page-num-footer">6</div>
+</div>
+
+<!-- ════════════════════════════════════════════════════
+     PAGE 7 — API DESIGN (overview + endpoint tables)
+════════════════════════════════════════════════════ -->
+<div class="page">
+
+  <h2 class="section-title">5 &nbsp; API Design</h2>
+
+  <h3 class="subsection-title">5.1 &nbsp; API Overview</h3>
+  <p>
+    CUET Carnival backend exposes a <strong>RESTful JSON API</strong>. Endpoints are grouped by resource
+    (<code>/api/auth</code>, <code>/api/users</code>, <code>/api/events</code>,
+    <code>/api/dashboard</code>, <code>/api/admin</code>). Standard HTTP methods are used:
+    <strong>GET</strong> for reads, <strong>POST</strong> for creation,
+    <strong>PATCH</strong> for partial updates, <strong>DELETE</strong> for removal.
+    All protected routes require a valid Better Auth session cookie; admin routes additionally enforce
+    <code>role = "admin"</code>.
+  </p>
+
+  <h3 class="subsection-title">5.2 &nbsp; Endpoint List</h3>
+
+  <p style="margin-bottom:4px;"><strong>Health &amp; Auth</strong></p>
+  <table class="report-table">
+    <thead><tr><th>Method</th><th>Endpoint</th><th>Auth</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><span class="badge badge-GET">GET</span></td><td>/api/health</td><td><span class="auth-chip auth-no">Public</span></td><td>Server health check</td></tr>
+      <tr><td><span class="badge badge-POST">POST</span></td><td>/api/auth/sign-up/email</td><td><span class="auth-chip auth-no">Public</span></td><td>Register (CUET email only)</td></tr>
+      <tr><td><span class="badge badge-POST">POST</span></td><td>/api/auth/sign-in/email</td><td><span class="auth-chip auth-no">Public</span></td><td>Login and receive session cookie</td></tr>
+      <tr><td><span class="badge badge-POST">POST</span></td><td>/api/auth/sign-out</td><td><span class="auth-chip auth-yes">Session</span></td><td>Invalidate session</td></tr>
+      <tr><td><span class="badge badge-POST">POST</span></td><td>/api/auth/forget-password</td><td><span class="auth-chip auth-no">Public</span></td><td>Send password-reset email</td></tr>
+      <tr><td><span class="badge badge-POST">POST</span></td><td>/api/auth/reset-password</td><td><span class="auth-chip auth-no">Public</span></td><td>Reset password with email token</td></tr>
+      <tr><td><span class="badge badge-GET">GET</span></td><td>/api/auth/verify-email</td><td><span class="auth-chip auth-no">Public</span></td><td>Confirm email via link token</td></tr>
+    </tbody>
+  </table>
+
+  <p style="margin-bottom:4px;margin-top:10px;"><strong>Users</strong></p>
+  <table class="report-table">
+    <thead><tr><th>Method</th><th>Endpoint</th><th>Auth</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><span class="badge badge-GET">GET</span></td><td>/api/users/me</td><td><span class="auth-chip auth-yes">Session</span></td><td>Get authenticated user profile</td></tr>
+      <tr><td><span class="badge badge-PATCH">PATCH</span></td><td>/api/users/me/onboarding</td><td><span class="auth-chip auth-yes">Session</span></td><td>Complete organizer onboarding</td></tr>
+      <tr><td><span class="badge badge-GET">GET</span></td><td>/api/users/organizers</td><td><span class="auth-chip auth-yes">Session</span></td><td>List all organizers</td></tr>
+    </tbody>
+  </table>
+
+  <p style="margin-bottom:4px;margin-top:10px;"><strong>Events</strong></p>
+  <table class="report-table">
+    <thead><tr><th>Method</th><th>Endpoint</th><th>Auth</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><span class="badge badge-GET">GET</span></td><td>/api/events</td><td><span class="auth-chip auth-no">Public</span></td><td>List all published events</td></tr>
+      <tr><td><span class="badge badge-GET">GET</span></td><td>/api/events/mine</td><td><span class="auth-chip auth-yes">Session</span></td><td>Events created by current user</td></tr>
+      <tr><td><span class="badge badge-GET">GET</span></td><td>/api/events/:id</td><td><span class="auth-chip auth-no">Public</span></td><td>Get single event detail</td></tr>
+      <tr><td><span class="badge badge-POST">POST</span></td><td>/api/events</td><td><span class="auth-chip auth-yes">Session</span></td><td>Create a new event</td></tr>
+      <tr><td><span class="badge badge-PATCH">PATCH</span></td><td>/api/events/:id</td><td><span class="auth-chip auth-yes">Owner</span></td><td>Update event details</td></tr>
+      <tr><td><span class="badge badge-POST">POST</span></td><td>/api/events/:id/image</td><td><span class="auth-chip auth-yes">Owner</span></td><td>Upload event banner (multipart)</td></tr>
+      <tr><td><span class="badge badge-DELETE">DELETE</span></td><td>/api/events/:id</td><td><span class="auth-chip auth-yes">Owner</span></td><td>Delete an event</td></tr>
+      <tr><td><span class="badge badge-POST">POST</span></td><td>/api/events/:id/register</td><td><span class="auth-chip auth-yes">Session</span></td><td>Register current user for event</td></tr>
+      <tr><td><span class="badge badge-GET">GET</span></td><td>/api/events/:id/registrations</td><td><span class="auth-chip auth-yes">Session</span></td><td>List registrations for event</td></tr>
+      <tr><td><span class="badge badge-DELETE">DELETE</span></td><td>/api/events/:id/registrations/:regId</td><td><span class="auth-chip auth-yes">Session</span></td><td>Remove a registration</td></tr>
+      <tr><td><span class="badge badge-POST">POST</span></td><td>/api/events/:id/registrations/:regId/certificate</td><td><span class="auth-chip auth-yes">Session</span></td><td>Issue certificate</td></tr>
+      <tr><td><span class="badge badge-DELETE">DELETE</span></td><td>/api/events/:id/registrations/:regId/certificate</td><td><span class="auth-chip auth-yes">Session</span></td><td>Revoke certificate</td></tr>
+    </tbody>
+  </table>
+
+  <div class="page-num-footer">7</div>
+</div>
+
+<!-- ════════════════════════════════════════════════════
+     PAGE 8 — DASHBOARD + ADMIN ENDPOINTS + SAMPLES
+════════════════════════════════════════════════════ -->
+<div class="page">
+
+  <p style="margin-bottom:4px;"><strong>Dashboard — User</strong></p>
+  <table class="report-table">
+    <thead><tr><th>Method</th><th>Endpoint</th><th>Auth</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><span class="badge badge-GET">GET</span></td><td>/api/dashboard/overview</td><td><span class="auth-chip auth-yes">Session</span></td><td>Personal dashboard stats</td></tr>
+      <tr><td><span class="badge badge-GET">GET</span></td><td>/api/dashboard/my-events</td><td><span class="auth-chip auth-yes">Session</span></td><td>Events the user registered for</td></tr>
+      <tr><td><span class="badge badge-GET">GET</span></td><td>/api/dashboard/schedule</td><td><span class="auth-chip auth-yes">Session</span></td><td>Upcoming schedule for user</td></tr>
+      <tr><td><span class="badge badge-GET">GET</span></td><td>/api/dashboard/certificates</td><td><span class="auth-chip auth-yes">Session</span></td><td>Certificates earned by user</td></tr>
+    </tbody>
+  </table>
+
+  <p style="margin-bottom:4px;margin-top:10px;"><strong>Dashboard — Admin</strong></p>
+  <table class="report-table">
+    <thead><tr><th>Method</th><th>Endpoint</th><th>Auth</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><span class="badge badge-GET">GET</span></td><td>/api/dashboard/admin/overview</td><td><span class="auth-chip auth-admin">Admin</span></td><td>Platform-wide stats</td></tr>
+      <tr><td><span class="badge badge-GET">GET</span></td><td>/api/dashboard/admin/events</td><td><span class="auth-chip auth-admin">Admin</span></td><td>All events</td></tr>
+      <tr><td><span class="badge badge-GET">GET</span></td><td>/api/dashboard/admin/users</td><td><span class="auth-chip auth-admin">Admin</span></td><td>All registered users</td></tr>
+      <tr><td><span class="badge badge-GET">GET</span></td><td>/api/dashboard/admin/reports</td><td><span class="auth-chip auth-admin">Admin</span></td><td>Aggregated reports</td></tr>
+      <tr><td><span class="badge badge-GET">GET</span></td><td>/api/dashboard/admin/events/:id/registrations</td><td><span class="auth-chip auth-admin">Admin</span></td><td>Registrations for any event</td></tr>
+      <tr><td><span class="badge badge-PATCH">PATCH</span></td><td>/api/dashboard/admin/events/:id/toggle-publish</td><td><span class="auth-chip auth-admin">Admin</span></td><td>Publish / unpublish event</td></tr>
+      <tr><td><span class="badge badge-DELETE">DELETE</span></td><td>/api/dashboard/admin/events/:id</td><td><span class="auth-chip auth-admin">Admin</span></td><td>Force-delete any event</td></tr>
+      <tr><td><span class="badge badge-PATCH">PATCH</span></td><td>/api/dashboard/admin/users/:id/suspend</td><td><span class="auth-chip auth-admin">Admin</span></td><td>Suspend / unsuspend user</td></tr>
+      <tr><td><span class="badge badge-DELETE">DELETE</span></td><td>/api/dashboard/admin/users/:id</td><td><span class="auth-chip auth-admin">Admin</span></td><td>Delete a user account</td></tr>
+      <tr><td><span class="badge badge-PATCH">PATCH</span></td><td>/api/dashboard/admin/users/:id/role</td><td><span class="auth-chip auth-admin">Admin</span></td><td>Change user role</td></tr>
+      <tr><td><span class="badge badge-PATCH">PATCH</span></td><td>/api/dashboard/admin/settings</td><td><span class="auth-chip auth-admin">Admin</span></td><td>Update platform settings</td></tr>
+    </tbody>
+  </table>
+
+  <p style="margin-bottom:4px;margin-top:10px;"><strong>Admin Reference Data</strong></p>
+  <table class="report-table">
+    <thead><tr><th>Method</th><th>Endpoint</th><th>Auth</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><span class="badge badge-GET">GET</span></td><td>/api/admin/faculties</td><td><span class="auth-chip auth-no">Public</span></td><td>List faculties with categories &amp; venues</td></tr>
+      <tr><td><span class="badge badge-POST">POST</span></td><td>/api/admin/faculties</td><td><span class="auth-chip auth-admin">Admin</span></td><td>Create faculty</td></tr>
+      <tr><td><span class="badge badge-DELETE">DELETE</span></td><td>/api/admin/faculties/:id</td><td><span class="auth-chip auth-admin">Admin</span></td><td>Delete faculty</td></tr>
+      <tr><td><span class="badge badge-POST">POST</span></td><td>/api/admin/faculties/:id/categories</td><td><span class="auth-chip auth-admin">Admin</span></td><td>Add category to faculty</td></tr>
+      <tr><td><span class="badge badge-DELETE">DELETE</span></td><td>/api/admin/categories/:categoryId</td><td><span class="auth-chip auth-admin">Admin</span></td><td>Delete category</td></tr>
+      <tr><td><span class="badge badge-POST">POST</span></td><td>/api/admin/faculties/:id/venues</td><td><span class="auth-chip auth-admin">Admin</span></td><td>Add venue to faculty</td></tr>
+      <tr><td><span class="badge badge-DELETE">DELETE</span></td><td>/api/admin/venues/:venueId</td><td><span class="auth-chip auth-admin">Admin</span></td><td>Delete venue</td></tr>
+    </tbody>
+  </table>
+
+  <h3 class="subsection-title">5.3 &nbsp; Sample Request / Response</h3>
+
+  <p><strong>POST /api/events/:id/register</strong></p>
+
+  <p style="margin-bottom:2px;">Request Body:</p>
+<pre>{
+  <span class="json-key">"studentId"</span>: <span class="json-string">"2204075"</span>,
+  <span class="json-key">"department"</span>: <span class="json-string">"CSE"</span>,
+  <span class="json-key">"hall"</span>: <span class="json-string">"Shaheed Abdullah Hall"</span>
+}</pre>
+
+  <p style="margin-bottom:2px;">Success Response <code>201</code>:</p>
+<pre>{
+  <span class="json-key">"data"</span>: {
+    <span class="json-key">"id"</span>: <span class="json-string">"cuid..."</span>,
+    <span class="json-key">"userId"</span>: <span class="json-string">"cuid..."</span>,
+    <span class="json-key">"eventId"</span>: <span class="json-string">"cuid..."</span>,
+    <span class="json-key">"status"</span>: <span class="json-string">"Confirmed"</span>,
+    <span class="json-key">"registeredAt"</span>: <span class="json-string">"2026-04-26T10:00:00.000Z"</span>
+  },
+  <span class="json-key">"message"</span>: <span class="json-string">"Registered successfully"</span>
+}</pre>
+
+  <p><strong>POST /api/auth/sign-up/email</strong></p>
+  <p style="margin-bottom:2px;">Request Body:</p>
+<pre>{
+  <span class="json-key">"name"</span>: <span class="json-string">"Sajjad Hossain"</span>,
+  <span class="json-key">"email"</span>: <span class="json-string">"u2204075@student.cuet.ac.bd"</span>,
+  <span class="json-key">"password"</span>: <span class="json-string">"secret123"</span>
+}</pre>
+
+  <div class="page-num-footer">8</div>
+</div>
+
+<!-- ════════════════════════════════════════════════════
+     PAGE 9 — AUTH & SECURITY + ERROR HANDLING
+════════════════════════════════════════════════════ -->
+<div class="page">
+
+  <h2 class="section-title">6 &nbsp; Authentication and Security</h2>
+
+  <h3 class="subsection-title">6.1 &nbsp; Authentication Method</h3>
+  <p>
+    The backend uses <strong>Better Auth</strong> — a modern, framework-agnostic authentication library.
+    After a successful sign-in, Better Auth issues an <strong>HTTP-only session cookie</strong>
+    (not a client-readable JWT). The cookie is validated on every protected request via the
+    <code>requireAuth</code> middleware, which calls Better Auth's session introspection and
+    attaches <code>req.authUserId</code> and <code>req.authUserRole</code> to the request object.
+  </p>
+  <p>
+    Session records are persisted in the <code>Session</code> table and expire at a configurable TTL.
+    Signing out deletes the session from the database and clears the cookie.
+  </p>
+
+  <h3 class="subsection-title">6.2 &nbsp; Security Measures</h3>
+  <ul class="body-list">
+    <li><strong>Institutional email restriction:</strong> Sign-up is gated by a regex pattern
+      (<code>/^u\d+@student\.cuet\.ac\.bd$/i</code>); non-CUET addresses are rejected with
+      a descriptive error.</li>
+    <li><strong>Email verification:</strong> A verification link is sent via Gmail SMTP before the
+      account is usable. Unverified accounts cannot access protected routes.</li>
+    <li><strong>Password hashing:</strong> Passwords are hashed by Better Auth (bcrypt internally)
+      before being stored; plain-text passwords never reach the database.</li>
+    <li><strong>HTTP-only cookies:</strong> Session tokens cannot be read by JavaScript, eliminating
+      XSS-based token theft.</li>
+    <li><strong>Role-based access control:</strong> Admin-only endpoints verify
+      <code>req.authUserRole === "admin"</code> before executing; non-admin calls receive
+      <code>403 Forbidden</code>.</li>
+    <li><strong>Owner-only writes:</strong> Event update and delete verify that the requesting
+      user is the <code>organizerId</code> of the event; mismatches return <code>403</code>.</li>
+    <li><strong>Input validation:</strong> Request bodies are parsed with Zod schemas
+      (<code>createEventSchema</code>, <code>updateEventSchema</code>, <code>registerForEventSchema</code>)
+      before reaching the service layer; validation failures return <code>400</code> with structured
+      error details.</li>
+    <li><strong>CORS:</strong> Cross-Origin Resource Sharing is restricted to the <code>CLIENT_ORIGIN</code>
+      environment variable with credentials allowed.</li>
+    <li><strong>Error sanitisation:</strong> The global error handler avoids leaking internal stack
+      traces; Prisma-specific codes are mapped to user-friendly messages.</li>
+  </ul>
+
+  <h2 class="section-title">7 &nbsp; Error Handling</h2>
+  <p>
+    The backend uses a <strong>centralised error-handling strategy</strong> provided by
+    <code>express-async-errors</code>, which automatically forwards unhandled async exceptions to
+    the global error middleware without requiring per-route try/catch blocks.
+  </p>
+
+  <table class="report-table">
+    <thead><tr><th>Status Code</th><th>Meaning</th><th>Example scenario</th></tr></thead>
+    <tbody>
+      <tr><td>400</td><td>Bad Request</td><td>Zod validation fails on request body</td></tr>
+      <tr><td>401</td><td>Unauthorized</td><td>No valid session cookie present</td></tr>
+      <tr><td>403</td><td>Forbidden</td><td>Non-admin accessing admin route; non-owner editing event</td></tr>
+      <tr><td>404</td><td>Not Found</td><td>Event or registration ID does not exist</td></tr>
+      <tr><td>409</td><td>Conflict</td><td>Already registered for event; event at full capacity</td></tr>
+      <tr><td>503</td><td>Service Unavailable</td><td>Neon Postgres cold-start connection failure</td></tr>
+    </tbody>
+  </table>
+
+  <p style="margin-bottom:4px;">Standard error response format:</p>
+<pre>{
+  <span class="json-key">"message"</span>: <span class="json-string">"Descriptive error message"</span>
+}</pre>
+
+  <div class="page-num-footer">9</div>
+</div>
+
+<!-- ════════════════════════════════════════════════════
+     PAGE 10 — TESTING
+════════════════════════════════════════════════════ -->
+<div class="page">
+
+  <h2 class="section-title">8 &nbsp; Testing</h2>
+
+  <h3 class="subsection-title">8.1 &nbsp; Testing Strategy</h3>
+  <p>
+    API endpoints were tested manually using <strong>Thunder Client</strong> (VS Code extension) and
+    <strong>curl</strong> throughout development. Each module was verified against its expected
+    happy-path and error-path behaviour. SMTP configuration was validated using a dedicated
+    <code>npm run smtp:check</code> script before deployment.
+  </p>
+  <ul class="body-list">
+    <li>Authentication flow — sign-up, email verification, sign-in, sign-out, forgot/reset password.</li>
+    <li>Event CRUD — create, read, update, delete, image upload, publish toggle.</li>
+    <li>Registration flow — register, duplicate prevention, capacity enforcement, certificate issue/revoke.</li>
+    <li>Role-based access — admin-only routes blocked for regular users; owner-only writes enforced.</li>
+    <li>Error cases — invalid input, missing session, non-existent resources.</li>
+  </ul>
+
+  <h3 class="subsection-title">8.2 &nbsp; Test Cases</h3>
+
+  <table class="report-table">
+    <thead>
+      <tr><th>Test Case</th><th>Input</th><th>Expected Output</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Valid student sign-up</td>
+        <td>name, CUET email, password</td>
+        <td><code>201</code> — user created; verification email sent</td>
+      </tr>
+      <tr>
+        <td>Non-CUET email sign-up</td>
+        <td>gmail.com address</td>
+        <td><code>400</code> — institutional email required</td>
+      </tr>
+      <tr>
+        <td>Valid sign-in</td>
+        <td>Correct credentials</td>
+        <td><code>200</code> — session cookie set</td>
+      </tr>
+      <tr>
+        <td>Invalid sign-in</td>
+        <td>Wrong password</td>
+        <td><code>401</code> — Unauthorized</td>
+      </tr>
+      <tr>
+        <td>Create event (organizer)</td>
+        <td>Valid session + event body</td>
+        <td><code>201</code> — event created, isPublished = false</td>
+      </tr>
+      <tr>
+        <td>Edit event (non-owner)</td>
+        <td>Valid session of different user</td>
+        <td><code>403</code> — Forbidden</td>
+      </tr>
+      <tr>
+        <td>Register for event</td>
+        <td>Valid session + published event</td>
+        <td><code>201</code> — registration created</td>
+      </tr>
+      <tr>
+        <td>Register for full event</td>
+        <td>Valid session + event at capacity</td>
+        <td><code>409</code> — Event is full</td>
+      </tr>
+      <tr>
+        <td>Duplicate registration</td>
+        <td>Same user, same event</td>
+        <td><code>409</code> — Already registered</td>
+      </tr>
+      <tr>
+        <td>Admin publish event</td>
+        <td>Admin session + event ID</td>
+        <td><code>200</code> — isPublished toggled</td>
+      </tr>
+      <tr>
+        <td>Non-admin publish event</td>
+        <td>Regular user session</td>
+        <td><code>403</code> — Admin access required</td>
+      </tr>
+      <tr>
+        <td>Issue certificate</td>
+        <td>Organizer session + registration ID</td>
+        <td><code>200</code> — certificate record created</td>
+      </tr>
+      <tr>
+        <td>DB cold start</td>
+        <td>Any request, Neon sleeping</td>
+        <td><code>503</code> — clean retry message</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="page-num-footer">10</div>
+</div>
+
+<!-- ════════════════════════════════════════════════════
+     PAGE 11 — LIMITATIONS + CONCLUSION + REFERENCES
+════════════════════════════════════════════════════ -->
+<div class="page">
+
+  <h2 class="section-title">9 &nbsp; Limitations and Future Work</h2>
+
+  <h3 class="subsection-title">9.1 &nbsp; Limitations</h3>
+  <ul class="body-list">
+    <li>Event banner images are stored on the local filesystem; on Vercel they are written to <code>/tmp</code>
+      which is ephemeral — images are lost on function cold starts. A dedicated object storage (S3 / Cloudinary) is needed for production.</li>
+    <li>Certificate issuance currently creates a database record only; no PDF or QR-code generation is implemented.</li>
+    <li>No real-time notifications (WebSocket / Server-Sent Events) — status changes require a page refresh.</li>
+    <li>Search and filtering on event listings are limited; full-text search is not yet supported.</li>
+    <li>No automated test suite (unit or integration tests); testing was done entirely manually.</li>
+    <li>Neon free-tier cold starts can add 1–3 seconds of latency to the first request after idle.</li>
+  </ul>
+
+  <h3 class="subsection-title">9.2 &nbsp; Future Improvements</h3>
+  <ul class="body-list">
+    <li>Integrate cloud storage (AWS S3 or Cloudinary) for permanent event image hosting.</li>
+    <li>Generate downloadable PDF participation certificates with QR code verification.</li>
+    <li>Add real-time email and in-app notifications for registration confirmations and status updates.</li>
+    <li>Implement full-text search and facet filtering on events (category, date range, capacity).</li>
+    <li>Write a comprehensive test suite using Vitest or Jest with database mocking.</li>
+    <li>Add a department-wise and event-wise analytics dashboard for administrators.</li>
+    <li>Extend authentication with OAuth (Google SSO) as a complement to email/password login.</li>
+    <li>Develop a mobile application (React Native or Flutter) consuming the same REST API.</li>
+  </ul>
+
+  <h2 class="section-title">10 &nbsp; Conclusion</h2>
+  <p>
+    CUET Carnival provides a structured and practical backend solution for managing campus events at
+    Chittagong University of Engineering &amp; Technology. It digitalises the full lifecycle of an event —
+    from creation by an organizer through administrative review to student registration and certificate
+    issuance — using a clean RESTful API, secure session-based authentication, and a relational
+    PostgreSQL database.
+  </p>
+  <p>
+    The modular Express architecture, type-safe Prisma ORM, and Zod-based validation make the codebase
+    maintainable and straightforward to extend. Role-based access control, institutional email
+    restrictions, and HTTP-only cookies ensure that the platform meets fundamental security requirements.
+  </p>
+  <p>
+    As a result, manual overhead associated with spreadsheet-based registration is eliminated, and
+    coordination between students, organizers, and administrators becomes transparent, trackable, and
+    efficient. The current architecture serves as a solid foundation for the future improvements
+    outlined above.
+  </p>
+
+  <h2 class="section-title">References</h2>
+  <ul class="body-list">
+    <li>Express.js Documentation — <a href="https://expressjs.com">https://expressjs.com</a></li>
+    <li>Prisma Documentation — <a href="https://www.prisma.io/docs">https://www.prisma.io/docs</a></li>
+    <li>Better Auth Documentation — <a href="https://better-auth.com">https://better-auth.com</a></li>
+    <li>Neon Postgres — <a href="https://neon.tech/docs">https://neon.tech/docs</a></li>
+    <li>Next.js Documentation — <a href="https://nextjs.org/docs">https://nextjs.org/docs</a></li>
+    <li>MDN Web Docs — <a href="https://developer.mozilla.org">https://developer.mozilla.org</a></li>
+    <li>Zod — <a href="https://zod.dev">https://zod.dev</a></li>
+  </ul>
+
+  <p style="margin-top: 28px; text-align:center; font-size:9pt; color:#777;">— End of Report —</p>
+
+  <div class="page-num-footer">11</div>
+</div>
+
+</body>
+</html>
